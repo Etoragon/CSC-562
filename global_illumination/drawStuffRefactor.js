@@ -2,7 +2,6 @@
 
 class Color {
 	constructor(r, g, b, a) {
-		/**try { */
 		if ((typeof (r) !== "number") || (typeof (g) !== "number") || (typeof (b) !== "number") || (typeof (a) !== "number"))
 			throw "color component not a number";
 		else if ((r < 0) || (g < 0) || (b < 0) || (a < 0))
@@ -12,32 +11,18 @@ class Color {
 		else {
 			this[0] = r; this[1] = g; this[2] = b; this[3] = a;
 		}
-		/**} // end try
-
-		catch (e) {
-			console.log(e);
-			console.log([r, g, b, a]);
-		} */
 	} // end Color constructor
 
 	// Color change method
 	change(r, g, b, a) {
-		try {
-			if ((typeof (r) !== "number") || (typeof (g) !== "number") || (typeof (b) !== "number") || (typeof (a) !== "number"))
-				throw "color component not a number";
-			else if ((r < 0) || (g < 0) || (b < 0) || (a < 0))
-				throw "color component less than 0";
-			else if ((r > 255) || (g > 255) || (b > 255) || (a > 255))
-				throw "color component bigger than 255";
-			else {
-				this[0] = r; this[1] = g; this[2] = b; this[3] = a;
-			}
-		} // end try
-
-		catch (e) {
-			console.log(e);
-			console.log([r, g, b, a]);
-			throw (e);
+		if ((typeof (r) !== "number") || (typeof (g) !== "number") || (typeof (b) !== "number") || (typeof (a) !== "number"))
+			throw "color component not a number";
+		else if ((r < 0) || (g < 0) || (b < 0) || (a < 0))
+			throw "color component less than 0";
+		else if ((r > 255) || (g > 255) || (b > 255) || (a > 255))
+			throw "color component bigger than 255";
+		else {
+			this[0] = r; this[1] = g; this[2] = b; this[3] = a;
 		}
 	} // end Color change method
 } // end color class
@@ -49,30 +34,19 @@ class Vector {
 
 	// sets the components of a vector
 	set(x, y, z) {
-		try {
-			if ((typeof (x) !== "number") || (typeof (y) !== "number") || (typeof (z) !== "number"))
-				throw "vector component not a number";
-			else
-				this.x = x; this.y = y; this.z = z;
-		} // end try
+		if ((typeof (x) !== "number") || (typeof (y) !== "number") || (typeof (z) !== "number"))
+			throw "vector component not a number";
+		else
+			this.x = x; this.y = y; this.z = z;
 
-		catch (e) {
-			console.log(e);
-		}
 	} // end vector set
 
 	// copy the passed vector into this one
 	copy(v) {
-		try {
-			if (!(v instanceof Vector))
-				throw "Vector.copy: non-vector parameter";
-			else
-				this.x = v.x; this.y = v.y; this.z = v.z;
-		} // end try
-
-		catch (e) {
-			throw (e);
-			console.log(e);
+		if (!(v instanceof Vector)) {
+			throw "Vector.copy: non-vector parameter";
+		} else {
+			this.x = v.x; this.y = v.y; this.z = v.z;
 		}
 	}
 
@@ -82,169 +56,86 @@ class Vector {
 
 	// static dot method
 	static dot(v1, v2) {
-		try {
-			if (!(v1 instanceof Vector) || !(v2 instanceof Vector))
-				throw "Vector.dot: non-vector parameter";
-			else
-				return (v1.x * v2.x + v1.y * v2.y + v1.z * v2.z);
-		} // end try
-
-		catch (e) {
-			console.log(e);
-			console.log(v1);
-			console.log(v2);
-			throw Error(e);
-			return (NaN);
-		}
-		/*try {
-			if (!(v1 instanceof Vector) || !(v2 instanceof Vector))
-				throw "Vector.dot: non-vector parameter";
-			else
-				return (v1.x * v2.x + v1.y * v2.y + v1.z * v2.z);
-		} // end try
-
-		catch (e) {
-			console.log(e);
-			throw Error(e);
-			return (NaN);
-		}*/
+		if (!(v1 instanceof Vector) || !(v2 instanceof Vector))
+			throw "Vector.dot: non-vector parameter";
+		else
+			return (v1.x * v2.x + v1.y * v2.y + v1.z * v2.z);
 	} // end dot static method
 
 	static cross(v1, v2) {
-		try {
-			if (!(v1 instanceof Vector) || !(v2 instanceof Vector))
-				throw "Vector.cross: non-vector parameter";
-			else
-				return (new Vector(v1.y * v2.z - v1.z * v2.y,
-					v1.z * v2.x - v1.x * v2.z,
-					v1.x * v2.y - v1.y * v2.x));
-		} // end try
-
-		catch (e) {
-			console.log(e);
-			throw Error(e);
-			return (NaN);
-		}
+		if (!(v1 instanceof Vector) || !(v2 instanceof Vector))
+			throw "Vector.cross: non-vector parameter";
+		else
+			return (new Vector(v1.y * v2.z - v1.z * v2.y,
+				v1.z * v2.x - v1.x * v2.z,
+				v1.x * v2.y - v1.y * v2.x));
 	}
 
 	// static add method
 	static add(v1, v2) {
-		try {
-			if (!(v1 instanceof Vector) || !(v2 instanceof Vector))
-				throw "Vector.add: non-vector parameter";
-			else
-				return (new Vector(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z));
-		} // end try
-
-		catch (e) {
-			console.log(e);
-			throw Error(e);
-			return (new Vector(NaN, NaN, NaN));
-		}
+		if (!(v1 instanceof Vector) || !(v2 instanceof Vector))
+			throw "Vector.add: non-vector parameter";
+		else
+			return (new Vector(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z));
 	} // end add static method
 
 	// static subtract method, v1-v2
 	static subtract(v1, v2) {
-		try {
-			if (!(v1 instanceof Vector) || !(v2 instanceof Vector))
-				throw "Vector.subtract: non-vector parameter";
-			else {
-				var v = new Vector(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
-				//v.toConsole("Vector.subtract: ");
-				return (v);
-			}
-		} // end try
-
-		catch (e) {
-			console.log(e);
-			return (new Vector(NaN, NaN, NaN));
+		if (!(v1 instanceof Vector) || !(v2 instanceof Vector))
+			throw "Vector.subtract: non-vector parameter";
+		else {
+			var v = new Vector(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
+			//v.toConsole("Vector.subtract: ");
+			return (v);
 		}
 	} // end subtract static method
 
 	// static divide method, v1.x/v2.x etc
 	static divide(v1, v2) {
-		try {
-			if (!(v1 instanceof Vector) || !(v2 instanceof Vector))
-				throw "Vector.divide: non-vector parameter";
-			else {
-				var v = new Vector(v1.x / v2.x, v1.y / v2.y, v1.z / v2.z);
-				//v.toConsole("Vector.divide: ");
-				return (v);
-			}
-		} // end try
-
-		catch (e) {
-			console.log(e);
-			return (new Vector(NaN, NaN, NaN));
+		if (!(v1 instanceof Vector) || !(v2 instanceof Vector))
+			throw "Vector.divide: non-vector parameter";
+		else {
+			var v = new Vector(v1.x / v2.x, v1.y / v2.y, v1.z / v2.z);
+			//v.toConsole("Vector.divide: ");
+			return (v);
 		}
 	} // end divide static method
 
 	// static divide method, v1.x/v2.x etc
 	static multiply(v1, v2) {
-		try {
-			if (!(v1 instanceof Vector) || !(v2 instanceof Vector))
-				throw "Vector.multiply: non-vector parameter";
-			else {
-				var v = new Vector(v1.x * v2.x, v1.y * v2.y, v1.z * v2.z);
-				//v.toConsole("Vector.divide: ");
-				return (v);
-			}
-		} // end try
-
-		catch (e) {
-			console.log(e);
-			return (new Vector(NaN, NaN, NaN));
+		if (!(v1 instanceof Vector) || !(v2 instanceof Vector))
+			throw "Vector.multiply: non-vector parameter";
+		else {
+			var v = new Vector(v1.x * v2.x, v1.y * v2.y, v1.z * v2.z);
+			//v.toConsole("Vector.divide: ");
+			return (v);
 		}
 	} // end multiply static method
 
 	// static scale method
 	static scale(c, v) {
-		try {
-			if (!(typeof (c) === "number") || !(v instanceof Vector))
-				throw "Vector.scale: malformed parameter";
-			else
-				return (new Vector(c * v.x, c * v.y, c * v.z));
-		} // end try
-
-		catch (e) {
-			console.log(e);
-			throw Error(e);
-			return (new Vector(NaN, NaN, NaN));
-		}
+		if (!(typeof (c) === "number") || !(v instanceof Vector))
+			throw "Vector.scale: malformed parameter";
+		else
+			return (new Vector(c * v.x, c * v.y, c * v.z));
 	} // end scale static method
 
 	// static normalize method
 	static normalize(v) {
-		try {
-			if (!(v instanceof Vector))
-				throw "Vector.normalize: parameter not a vector";
-			else {
-				var lenDenom = 1 / Math.sqrt(Vector.dot(v, v));
-				return (Vector.scale(lenDenom, v));
-			}
-		} // end try
-
-		catch (e) {
-			console.log(e);
-			throw Error(e);
-			return (new Vector(NaN, NaN, NaN));
+		if (!(v instanceof Vector))
+			throw "Vector.normalize: parameter not a vector";
+		else {
+			var lenDenom = 1 / Math.sqrt(Vector.dot(v, v));
+			return (Vector.scale(lenDenom, v));
 		}
 	} // end scale static method
 
 	static magnitude(v) {
-		try {
-			if (!(v instanceof Vector))
-				throw "Vector.normalize: parameter not a vector";
-			else {
-				let magn = v.x ** 2 + v.y ** 2 + v.z ** 2;
-				return magn;
-			}
-		} // end try
-
-		catch (e) {
-			console.log(e);
-			throw Error(e);
-			return (new Vector(NaN, NaN, NaN));
+		if (!(v instanceof Vector))
+			throw "Vector.normalize: parameter not a vector";
+		else {
+			let magn = v.x ** 2 + v.y ** 2 + v.z ** 2;
+			return magn;
 		}
 	}
 
@@ -307,32 +198,27 @@ function getInputTriangles() {
  * @returns {JSON} returns the desired JSON resource at url
  */
 function getJSONFile(url, descr) {
-	try {
-		if ((typeof (url) !== "string") || (typeof (descr) !== "string"))
-			throw "getJSONFile: parameter not a string";
-		else {
-			// Create and send a new http request
-			var httpReq = new XMLHttpRequest();
-			httpReq.open("GET", url, false);
-			httpReq.send(null);
+	if ((typeof (url) !== "string") || (typeof (descr) !== "string"))
+		throw "getJSONFile: parameter not a string";
+	else {
+		// Create and send a new http request
+		var httpReq = new XMLHttpRequest();
+		httpReq.open("GET", url, false);
+		httpReq.send(null);
 
-			// Check for timeout and break if over 3 second
-			var startTime = Date.now();
-			while ((httpReq.status !== 200) && (httpReq.readyState !== XMLHttpRequest.DONE)) {
-				if ((Date.now() - startTime) > 3000)
-					break;
-			}
-
-			// If there are any bad returns or timeouts, then throw error. Else obtain resource and return
-			if ((httpReq.status !== 200) || (httpReq.readyState !== XMLHttpRequest.DONE))
-				throw "Unable to open " + descr + " file!";
-			else
-				return JSON.parse(httpReq.response);
-
+		// Check for timeout and break if over 3 second
+		var startTime = Date.now();
+		while ((httpReq.status !== 200) && (httpReq.readyState !== XMLHttpRequest.DONE)) {
+			if ((Date.now() - startTime) > 3000)
+				break;
 		}
-	} catch (e) {
-		console.log(e);
-		return (String.null);
+
+		// If there are any bad returns or timeouts, then throw error. Else obtain resource and return
+		if ((httpReq.status !== 200) || (httpReq.readyState !== XMLHttpRequest.DONE))
+			throw "Unable to open " + descr + " file!";
+		else
+			return JSON.parse(httpReq.response);
+
 	}
 }
 
@@ -366,24 +252,31 @@ function side(n, i, a, b) {
 	return Vector.dot(n, Vector.cross(f, g));
 }
 
+/**
+ * This function accepts some parameters and returns if a given point is within the triangle
+ * 
+ * @param {Vector} i The interesection point in x y z coordinates using the Vector Class
+ * @param {Vector} a A triangle vertex in x y z coordinates using the Vector Class
+ * @param {Vector} b Another triangle vertex in x y z coordinates using the Vector Class
+ * @param {Vector} c The last triangle vertex in x y z coordinates using the Vector Class
+ * @param {Vector} n The normal vector of the triangle in x y z coordinates using the Vector Class
+ * 
+ * @returns {boolean} Whether the point is inside the triangle
+ * 
+ */
 function IsPointInsideTriangle(i, a, b, c, n) {
-	try {
-		if (!(i instanceof Vector) || !(a instanceof Vector) || !(b instanceof Vector) || !(c instanceof Vector))
-			throw "Need vector inputs";
+	if (!(i instanceof Vector) || !(a instanceof Vector) || !(b instanceof Vector) || !(c instanceof Vector))
+		throw "Need vector inputs";
 
-		var s1 = side(n, i, a, b);
-		var s2 = side(n, i, b, c);
-		var s3 = side(n, i, c, a);
+	var s1 = side(n, i, a, b);
+	var s2 = side(n, i, b, c);
+	var s3 = side(n, i, c, a);
 
-		// Allow inclusion of edges by checking for zero-cross product (colinearity)
-		if ((s1 === 0 || s2 === 0 || s3 === 0) || (s1 > 0 && s2 > 0 && s3 > 0) || (s1 < 0 && s2 < 0 && s3 < 0)) {
-			return true;
-		}
-		return false;
-	} catch (e) {
-		console.log(e);
-		return false;
+	// Allow inclusion of edges by checking for zero-cross product (colinearity)
+	if ((s1 === 0 || s2 === 0 || s3 === 0) || (s1 > 0 && s2 > 0 && s3 > 0) || (s1 < 0 && s2 < 0 && s3 < 0)) {
+		return true;
 	}
+	return false;
 }
 
 
@@ -394,11 +287,10 @@ function IsPointInsideTriangle(i, a, b, c, n) {
  * 
  * @param {Array<Vector>} ray Array with the eye and ray direction both as vectors (in that order) such that [EYE, DIR]
  * @param {Array<Array>} triangle Array of Triangle vertices, each with x, y, and z coordinates
- * @param {Number} clipVal The value by which the ray should not be checked past (defines clipping plane)
  * 
  * @returns {JSON} JSON object with attributes exists, xyz, and t;
  */
-function rayTriangleIntersect(ray, triangle, clipVal) {
+function rayTriangleIntersect(ray, triangle) {
 	if (!(ray instanceof Array) || !(triangle instanceof Object))
 		throw "RayTriangleIntersect: ray or ellipsoid are not formatted well";
 	else if (ray.length != 2)
@@ -426,53 +318,83 @@ function rayTriangleIntersect(ray, triangle, clipVal) {
 	} // end if valid params
 }
 
-//var numRaysSentOutOfHemisphere = 1;
-function indirectIllumination(intersection, rayToDestination, lights, inputTriangles, inputEllipsoids, currentlyEllipsoid, whichEllipsoid = 0, whichTriSet = 0, whichTriInSet = 0, bounceCountCurrent = 0) {
-	let estRadiance = new Vector(0, 0, 0);
+/**
+ * Calculates the indirect illumination at a given intersection point. It does this by randomly sampling a direction, then calculating the radiance at that spot.
+ * When the ray hits a certain recursion depth, however (either because it hit the max defined at the bottom or it fails the random coin flip), it just returns the direct
+ * illumination at its new intersection point, therefore collapsing the recursion
+ * 
+ * @param {Vector} intersection - The intersection point where illumination is calculated.
+ * @param {Vector} rayToDestination - The ray direction towards the destination.
+ * @param {Array} lights - An array of light sources in the scene.
+ * @param {Array} inputTriangles - An array of triangles in the scene.
+ * @param {Array} inputEllipsoids - An array of ellipsoids in the scene.
+ * @param {boolean} currentlyEllipsoid - Indicates whether the current object is an ellipsoid.
+ * @param {number} whichEllipsoid - Index of the current ellipsoid in the array.
+ * @param {number} whichTriSet - Index of the current triangle set.
+ * @param {number} whichTriInSet - Index of the triangle within the set.
+ * @param {number} bounceCountCurrent - The current bounce count for recursion.
+ * 
+ * @returns {Vector} The calculated illumination color or intensity at the intersection.
+ */
+function indirectIllumination(intersection, rayToDestination, lights, inputTriangles, inputEllipsoids, currentlyEllipsoid, whichEllipsoid, whichTriSet, whichTriInSet, bounceCountCurrent) {
 
+	let estRadiance = new Vector(0, 0, 0);
 	let numEllipsoids = inputEllipsoids.length;
 
+	// How many rays should be sent from this intersection
 	let bounceNum = 0;
 
+	// If it's the first recursive call, return the INITAL_BOUNCE_AMOUNT, else, just continue the same ray
 	if (bounceCountCurrent == 0) {
 		bounceNum = INITIAL_BOUNCE_AMOUNT;
 	} else {
 		bounceNum = 1;
 	}
 
+	// Now let's iterate through each indirect ray that will bounce from the hemisphere
 	for (let bounceIdx = 0; bounceIdx < bounceNum; bounceIdx++) {
 
+		// Randomly sample the angles which define spherical coordinates
 		let theta = (Math.random() * 2.0 * Math.PI);
 		let phi = (Math.random() * Math.PI / 2.0);
 
+		// Calculate the normal vector of the intersection
 		let normalVector;
 		if (currentlyEllipsoid) {
-			//console.log([whichEllipsoid, inputEllipsoids]);
+			// If sphere, normal is from center to intersection
 			let sphereCenter = new Vector(inputEllipsoids[whichEllipsoid].x, inputEllipsoids[whichEllipsoid].y, inputEllipsoids[whichEllipsoid].z);
 			normalVector = Vector.subtract(intersection.xyz, sphereCenter);
 		} else {
-			//console.log([inputTriangles, whichTriSet, inputTriangles[whichTriSet].normals, whichTriInSet])
+			// If triangle, normal is pre-defined
 			let normalArray = inputTriangles[whichTriSet].normals[whichTriInSet];
 			normalVector = new Vector(normalArray[0], normalArray[1], normalArray[2]);
 		}
 
+		// To create an orthonormal basis set which the up vector as the normal, we will cross the normal and the ray to destination vector,
+		// which will result in a vector orthogonal to the normal
 		let normalizedOrthogonalVector1 = Vector.normalize(Vector.cross(normalVector, rayToDestination));
+
+		// Using the previos vector and the normal, create the last vector by crossing them and establish our orthonormal basis set
 		let normalizedOrthogonalVector2 = Vector.normalize(Vector.cross(normalVector, normalizedOrthogonalVector1));
 
+		// Using the random angle theta, rotate the first orthonormal basis vector about the normal in circle defined by normalizedOrthogonalVector1 and normalizedOrthogonalVector2
 		let normalizedVectorCircledAroundNormal = Vector.normalize(Vector.add(Vector.scale(Math.cos(theta), normalizedOrthogonalVector1), Vector.scale(Math.sin(theta), normalizedOrthogonalVector2)));
 
+		// Using the random angle phi, calculate the vector which is phi radians away from the normal and
+		// (pi/2 - phi) radians away from the previous vector (both of which define the vertical plane for the final vector)
 		let randomDirectionHemisphereVector = Vector.normalize(Vector.add(Vector.scale(Math.cos(phi), normalVector), Vector.scale(Math.sin(phi), normalizedVectorCircledAroundNormal)));
 
+		// Check for efraction sphere index, and if so, set the "random" direction to just the negative normal, which models refraction
 		if (currentlyEllipsoid && whichEllipsoid == REFRACTION_SPHERE_IDX) {
 			randomDirectionHemisphereVector = Vector.scale(1.0, normalVector); //this is the bread and butter of Refraction. This makes the sample vector opposite to normal and therefore beautiful
 		}
 
+		// Set up variables to detect and trackthe nearest intersection
 		let closestT = Number.MAX_VALUE;
 		let closestIntersection = null;
 		let closestTriSetIdx = null;
 		let closestTriInSetIdx = null;
 		let closestEllipsoidIdx = null;
-
 		let triangle = false;
 
 		// Iterate first through each tri group
@@ -485,14 +407,15 @@ function indirectIllumination(intersection, rayToDestination, lights, inputTrian
 				// Obtain the vertices for each triangle
 				let vertices = getVertices(inputTriangles, triSetIdx, triInSetIdx);
 
+				// Check intersection of the ray with this triangle
 				let intersectionNew = rayTriangleIntersect([intersection.xyz, randomDirectionHemisphereVector], vertices, 2);
 
+				// If it exists and it is NOT the one it came from 
 				if (intersectionNew.exists && !(whichTriSet == triSetIdx && whichTriInSet == triInSetIdx)) {
 
 					// Check to see if this intersection is the closest so far
 					if (intersectionNew.t < closestT) {
 
-						//console.log('check here');
 						triangle = true;
 						// If so, set new closest t
 						closestT = intersectionNew.t;
@@ -506,13 +429,15 @@ function indirectIllumination(intersection, rayToDestination, lights, inputTrian
 
 		// Now iterate through every ellipsoid
 		for (var ellipsoidIdx = 0; ellipsoidIdx < numEllipsoids; ellipsoidIdx++) {
-			// for (var e=0; e<1; e++) 
+
+			// Check ray intersection with Ellipsoid
 			isect = rayEllipsoidIntersect([intersection.xyz, randomDirectionHemisphereVector], inputEllipsoids[ellipsoidIdx], 0);
 			if (isect.exists) {// there is an intersect
 				if (isect.t < closestT) { // it is the closest yet
-					//console.log("here");
+
 					triangle = false;
 
+					// if so, set tracking variables
 					closestTriSetIdx = null;
 					closestTriInSetIdx = null;
 					closestT = isect.t;
@@ -523,23 +448,24 @@ function indirectIllumination(intersection, rayToDestination, lights, inputTrian
 		} // end for ellipsoids
 
 
+		// Coefficient variables for lighting calculation
 		let cosineResult = 0;
-		let resultingRadiance = new Vector(0, 0, 0);
 		let brdfResult = 0;
 		let distanceFactor = 0;
-
 		let totalFactor = 0;
 
+		// Preset the radiance variable
+		let resultingRadiance = new Vector(0, 0, 0);
+
+		// If no intersection, then return 0. Otherwise continue to calculation
 		if (closestIntersection == null) {
-			//console.log("here");
 			resultingRadiance = new Vector(0, 0, 0);
 		} else {
 
-
 			let directionFromNewIntersectionToPreviousIntersection = Vector.subtract(intersection.xyz, closestIntersection.xyz);
-
 			let intersectionNormalVector;
 
+			// Calculate the normals of the intersection points (triangle or ellipsoid)
 			if (triangle) {
 				let intersectionNormalArray = inputTriangles[closestTriSetIdx].normals[closestTriInSetIdx]
 				intersectionNormalVector = new Vector(intersectionNormalArray[0], intersectionNormalArray[1], intersectionNormalArray[2]);
@@ -549,44 +475,30 @@ function indirectIllumination(intersection, rayToDestination, lights, inputTrian
 				//console.log([sphereCenter, intersectionNormalVector])
 			}
 
-			//console.log([intersectionNormalVector, directionFromNewIntersectionToPreviousIntersection, rayToDestination]);
+			// Calculate and save brdf
 			brdfResult = brdf(intersectionNormalVector, directionFromNewIntersectionToPreviousIntersection, rayToDestination);
-			//intersection, rayToDestination, lights, inputTriangles, inputEllipsoids, currentlyEllipsoid, whichEllipsoid = 0, whichTriSet = 0, whichTriInSet = 0, onlyDirect = false
 
+			// Calculate random russian roulette value
 			let rouletteFactor = Math.random();
 
-			if (currentlyEllipsoid && whichEllipsoid == REFRACTION_SPHERE_IDX) {
-				resultingRadiance = directIllumincation(closestIntersection, directionFromNewIntersectionToPreviousIntersection, lights,
-					inputTriangles, inputEllipsoids, !triangle, closestEllipsoidIdx, closestTriSetIdx, closestTriInSetIdx)
-				return resultingRadiance;
-			} else {
+			// Calculate the radiance at the new intersection point, and only cotinue recursive indirect called if the random factor is above 0.5
+			resultingRadiance = radiance(closestIntersection, directionFromNewIntersectionToPreviousIntersection, lights,
+				inputTriangles, inputEllipsoids, !triangle, closestEllipsoidIdx, closestTriSetIdx, closestTriInSetIdx, (rouletteFactor > 0.5) ? bounceCountCurrent + 1 : LONGEST_BOUNCE_DEPTH);
 
-				resultingRadiance = radiance(closestIntersection, directionFromNewIntersectionToPreviousIntersection, lights,
-					inputTriangles, inputEllipsoids, !triangle, closestEllipsoidIdx, closestTriSetIdx, closestTriInSetIdx, true, (rouletteFactor > 0.5) ? bounceCountCurrent + 1 : LONGEST_BOUNCE_DEPTH);
-				//let surfaceColor = new Vector(inputTriangles[whichTriSet].material.diffuse[0], inputTriangles[whichTriSet].material.diffuse[1], inputTriangles[whichTriSet].material.diffuse[2]);
+			// Calculate the various factors applied after lighting calculation
+			cosineResult = Math.max(0, Vector.dot(Vector.normalize(intersectionNormalVector), Vector.normalize(directionFromNewIntersectionToPreviousIntersection)));
+			distanceFactor = 1 / (1 + closestT ** 2);
+			totalFactor = (1 / 5) * (cosineResult * brdfResult * distanceFactor) + 0.4; // Unique make it your own
 
-				cosineResult = Math.max(0, Vector.dot(Vector.normalize(intersectionNormalVector), Vector.normalize(directionFromNewIntersectionToPreviousIntersection)));
-				distanceFactor = 1 / (1 + closestT ** 2);
-
-				totalFactor = (1 / 5) * (cosineResult * brdfResult * distanceFactor) + 0.4; // Unique make it your own
-			}
 
 		}
 
-		//let thisColor = Vector.scale(cosineResult * brdfResult * distanceFactor, resultingRadiance);
-		//let largestValue = Math.min(1.0, Math.max(thisColor.x, thisColor.y, thisColor.z));
-		//let calculatedScaleFactor = Math.pow(largestValue, 1/8) / largestValue;
-
-		//let thisColorAdjusted = Vector.scale(calculatedScaleFactor, thisColor);
-
+		// Finally add the new resultingRadiance to the existing estRadiance
 		estRadiance = Vector.add(estRadiance, Vector.scale(totalFactor, resultingRadiance));
-		//console.log([brdfResult, cosineResult]);
-		//console.log(estRadiance);
-
 	}
 
+	// Divide the estimated radiance by the number of rays sent out to average all of them
 	return Vector.scale(1 / bounceNum, estRadiance);
-	//return new Vector(0, 0, 0);
 }
 
 // Source code from developer.mozilla.org
@@ -594,47 +506,75 @@ function getRandomInt(max) {
 	return Math.floor(Math.random() * max);
 }
 
+/**
+ * This function is my custom sigmoid function which transforms a variable with range [0, 1] to another variable with range [0, 1]
+ * The function is sqrt(-(value)^exp + 1)
+ * 
+ * @param {number} value - Input variable to the sigmoid funtion with range [0, 1]
+ * @param {number} [exp=1.1] - Input exponent, by default 1.1, which changes the sigmoid function
+ * 
+ * @returns {number} Output of Sigmoid function with range [0, 1]
+ */
 function customSigmoidFunction(value, exp = 1.1) {
 	return Math.sqrt(-1.0 * Math.pow(value, exp) + 1);
 }
 
+/**
+ * This is a custom brdf function which I made to match the style which I wanted to implement. Takes in normal to surface, ray in and ray out (all with bases at the intersection point)
+ * and outputs a result which factors in how light should be resulting from the input to the output vectors given the normal of the surface
+ * 
+ * @param {Vector} normalToSurface - A vector in xyz which is the normal of the intersection surface
+ * @param {Vector} rayToLightsource - A vector in xyz which is the ray from the intersection point to the lighting source 
+ * @param {Vector} rayToDestination - A vector in xyz which is the ray from the intersection to the lighting destination from the source off the intersection
+ * 
+ * @returns {number} A number which has a range of [0, 1] which represents the portion of light from the source off the intersection to the destination point
+ */
 function brdf(normalToSurface, rayToLightsource, rayToDestination) {
-	// sqrt(x^3 + 1)
 	return customSigmoidFunction(Math.abs(Math.abs(Vector.dot(Vector.normalize(rayToLightsource), Vector.normalize(normalToSurface))) - Math.abs(Vector.dot(Vector.normalize(rayToDestination), Vector.normalize(normalToSurface)))));
 }
 
-var temp1 = true;
-// This variable determines for every intersection point, how many times should a random light source be sampled.
+/**
+ * Calculates the direct illumination at a given intersection point.
+ * 
+ * @param {Vector} intersection - The intersection point where illumination is calculated.
+ * @param {Vector} rayToDestination - The ray direction towards the destination.
+ * @param {Array} lights - An array of light sources in the scene.
+ * @param {Array} inputTriangles - An array of triangles in the scene.
+ * @param {Array} inputEllipsoids - An array of ellipsoids in the scene.
+ * @param {boolean} currentlyEllipsoid - Indicates whether the current object is an ellipsoid.
+ * @param {number} whichEllipsoid - Index of the current ellipsoid in the array.
+ * @param {number} whichTriSet - Index of the current triangle set.
+ * @param {number} whichTriInSet - Index of the triangle within the set.
+ * 
+ * @returns {Vector} The calculated illumination color or intensity at the intersection.
+ */
+function directIllumincation(intersection, rayToDestination, lights, inputTriangles, inputEllipsoids, currentlyEllipsoid, whichEllipsoid, whichTriSet, whichTriInSet) {
 
-function directIllumincation(intersection, rayToDestination, lights, inputTriangles, inputEllipsoids, currentlyEllipsoid, whichEllipsoid = 0, whichTriSet = 0, whichTriInSet = 0) {
-
+	// Initialize radiance estimated value
 	let estRadiance = new Vector(0, 0, 0);
 
 	// We are just using uniform distribution, all lights have same prob
 	let lightProbability = 1 / lights.length;
 
-	// 
+	// Go through each sample 
 	for (let sampleIdx = 0; sampleIdx < numberOfLightSamples; sampleIdx++) {
 
+		// Get a random light index
 		let randomLightIdx = getRandomInt(lights.length);
-		//console.log(lights.length);
-		//console.log(randomLightIdx);
 
-		//this is where sampling inside a location would be 
+		// Obtain the light at the given point 
 		let randomlySelectedLight = lights[randomLightIdx];
-		//console.log(lights);
-		//console.log(randomlySelectedLight);
 		let randomlySelectedLightPosition = new Vector(randomlySelectedLight.x, randomlySelectedLight.y, randomlySelectedLight.z);
 		let vectorFromIntersectionToRandomLight = Vector.subtract(randomlySelectedLightPosition, intersection.xyz);
 
-		let occluded = isLightOccluded(vectorFromIntersectionToRandomLight, intersection.xyz, inputEllipsoids, inputTriangles, currentlyEllipsoid, whichEllipsoid, whichTriSet, whichTriInSet);
 
-		//L, isectPos, ellipsoids, triangles, currentlyEllipsoid, isectEllipsoid = 0, whichTriSet = 0, whichTriInSet = 0
+		// Check if life is occluded and if not		
+		let occludedList = isLightOccluded(vectorFromIntersectionToRandomLight, intersection.xyz, inputEllipsoids, currentlyEllipsoid, whichEllipsoid);
+		if (occludedList.length == 1 && occludedList[0][0] == REFRACTION_SPHERE_IDX) {
+			estRadiance = Vector.add(estRadiance, directIllumincation(occludedList[0][1], rayToDestination, lights, inputTriangles, inputEllipsoids, true, occludedList[0][0], whichTriSet, whichTriInSet));
+		} else if (occludedList.length == 0) {
 
-		if (occluded) {
-			return estRadiance;
-		} else {
-
+			// Calculate normal vector for either sphere or triangle, depending on state
 			let normalVector;
 			if (currentlyEllipsoid) {
 				let sphereCenter = new Vector(inputEllipsoids[whichEllipsoid].x, inputEllipsoids[whichEllipsoid].y, inputEllipsoids[whichEllipsoid].z);
@@ -644,68 +584,54 @@ function directIllumincation(intersection, rayToDestination, lights, inputTriang
 				normalVector = new Vector(normalArray[0], normalArray[1], normalArray[2]);
 			}
 
+			// Populate factors and initialize the surface color
 			let brdfResult = brdf(normalVector, vectorFromIntersectionToRandomLight, rayToDestination);
-
 			let cosineResult = Math.max(0, Vector.dot(Vector.normalize(normalVector), Vector.normalize(vectorFromIntersectionToRandomLight)));
-			//console.log([normalVector, vectorFromIntersectionToRandomLight, Vector.magnitude(vectorFromIntersectionToRandomLight), Vector.normalize(vectorFromIntersectionToRandomLight)]);
-			//console.log(cosineResult);
 			let surfaceColor;
 
-
+			// Get surface color depending on ellipsoid or triangle
 			if (currentlyEllipsoid) {
 				surfaceColor = new Vector(inputEllipsoids[whichEllipsoid].diffuse[0], inputEllipsoids[whichEllipsoid].diffuse[1], inputEllipsoids[whichEllipsoid].diffuse[2]);
-				//console.log(surfaceColor);
-				//console.log(surfaceColor);
 			} else {
 				surfaceColor = new Vector(inputTriangles[whichTriSet].material.diffuse[0], inputTriangles[whichTriSet].material.diffuse[1], inputTriangles[whichTriSet].material.diffuse[2]);
 			}
 
+			// Add the radiance from the surface color (direct light)
 			estRadiance = Vector.add(estRadiance, Vector.scale(brdfResult * cosineResult, surfaceColor));
-			if (currentlyEllipsoid) {
-				//console.log(estRadiance);
-				//console.log(brdfResult);
-				//console.log(cosineResult);
-			} else {
-				if (estRadiance.x < 0 || estRadiance.y < 0 || estRadiance.z < 0) {
-					//console.log('______________________________________________________________________________________________');
-				}
-			}
-			//estRadiance = new Vector(cosineResult, cosineResult, cosineResult);
-			//estRadiance = new Vector(brdfResult, brdfResult, brdfResult);
-			//console.log(estRadiance);
-			//estRadiance = new Vector(cosineResult, cosineResult, cosineResult);
 		}
-
 	}
 
+	// Return the weighted results
 	return Vector.scale(1 / (numberOfLightSamples * lightProbability * 1.0), estRadiance);
-
-	//return new Vector(0.5, 0.5, 0.5);
 }
-
-let tempNumber1 = true;
-let tempNumber2 = true;
-let tempNumber3 = true;
-let tempNumber4 = true;
 
 
 /**
  * This function dictates the overall color and shading resulting from an intersection.
  * intersection, rayToDestination, lights, inputTriangles, inputEllipsoids, currentlyEllipsoid, whichEllipsoid = 0, whichTriSet = 0, whichTriInSet = 0
  */
-function radiance(intersection, rayToDestination, lights, inputTriangles, inputEllipsoids, currentlyEllipsoid, whichEllipsoid = 0, whichTriSet = 0, whichTriInSet = 0, onlyDirect = false, bounceCountCurrent) {
+function radiance(intersection, rayToDestination, lights, inputTriangles, inputEllipsoids, currentlyEllipsoid, whichEllipsoid = 0, whichTriSet = 0, whichTriInSet = 0, bounceCountCurrent) {
+
+	// If we've hit the maximum bounce depth (or if roulette failed and caused this), only calculate direct therefore ending recursion
 	if (bounceCountCurrent >= LONGEST_BOUNCE_DEPTH) {
+
+		// Calculate direct
 		let direct = directIllumincation(intersection, rayToDestination, lights, inputTriangles, inputEllipsoids, currentlyEllipsoid, whichEllipsoid, whichTriSet, whichTriInSet);
+
+		// If for some reason the direct values are over 1, normalize it keeping the same ratios
 		if (Math.max(direct.x, direct.y, direct.z) > 1) {
 			direct = Vector.scale(1 / Math.max(direct.x, direct.y, direct.z), direct);
-		} if (Math.max(direct.x, direct.y, direct.z) > 1) {
-			throw Error("cope");
 		}
+
+		// Return direct result
 		return direct;
 	} else {
+
+		// Obtain both the indirect and direct light
 		let indirectRaw = Vector.scale(2.2, indirectIllumination(intersection, rayToDestination, lights, inputTriangles, inputEllipsoids, currentlyEllipsoid, whichEllipsoid, whichTriSet, whichTriInSet, bounceCountCurrent))
 		let directRaw = Vector.scale(1, directIllumincation(intersection, rayToDestination, lights, inputTriangles, inputEllipsoids, currentlyEllipsoid, whichEllipsoid, whichTriSet, whichTriInSet));
 
+		// You know, sometimes things are just so small that they turn into Nan's. So if they do they're basically just zero tbh
 		if (isNaN(indirectRaw.x) || isNaN(indirectRaw.y) || isNaN(indirectRaw.z)) {
 			indirectRaw = new Vector(0, 0, 0);
 		}
@@ -713,8 +639,11 @@ function radiance(intersection, rayToDestination, lights, inputTriangles, inputE
 			directRaw = new Vector(0, 0, 0);
 		}
 
+		// Sometimes they're negative, if they are just make them zero
 		let direct = new Vector(Math.max(0, directRaw.x), Math.max(0, directRaw.y), Math.max(0, directRaw.z));
 		let indirect = new Vector(Math.max(0, indirectRaw.x), Math.max(0, indirectRaw.y), Math.max(0, indirectRaw.z));
+
+		// Initialize adn set surface color
 		let surfaceColor;
 		if (currentlyEllipsoid) {
 			surfaceColor = new Vector(inputEllipsoids[whichEllipsoid].diffuse[0], inputEllipsoids[whichEllipsoid].diffuse[1], inputEllipsoids[whichEllipsoid].diffuse[2]);;
@@ -722,17 +651,19 @@ function radiance(intersection, rayToDestination, lights, inputTriangles, inputE
 			surfaceColor = new Vector(inputTriangles[whichTriSet].material.diffuse[0], inputTriangles[whichTriSet].material.diffuse[1], inputTriangles[whichTriSet].material.diffuse[2]);
 		}
 
+		// If any individual component of light coming in is greater than the material's light component itself, then the material can only reflect what its surface values are
 		let indirectResultingLight = new Vector(Math.min(surfaceColor.x, indirect.x), Math.min(surfaceColor.y, indirect.y), Math.min(surfaceColor.z, indirect.z))
 
-
+		// You know, sometimes things are just so small that they turn into Nan's. So if they do they're basically just zero tbh
 		if (isNaN(direct.x) || isNaN(direct.y) || isNaN(direct.z)) {
 			direct = new Vector(0, 0, 0);
 		}
 		if (isNaN(indirectResultingLight.x) || isNaN(indirectResultingLight.y) || isNaN(indirectResultingLight.z)) {
 			indirectResultingLight = new Vector(0, 0, 0);
 		}
-		let combinedRaw;
 
+		// Initialize and set raw combined values
+		let combinedRaw;
 		if (currentlyEllipsoid && whichEllipsoid == REFRACTION_SPHERE_IDX) {
 			combinedRaw = Vector.scale(1.0, indirect);
 			//console.log(indirectRaw);
@@ -740,11 +671,9 @@ function radiance(intersection, rayToDestination, lights, inputTriangles, inputE
 			combinedRaw = Vector.add(direct, indirectResultingLight);
 		}
 
-
+		// Calculate combined and return it!
 		let combined = new Vector(Math.min(1, Math.max(0, combinedRaw.x)), Math.min(1, Math.max(0, combinedRaw.y)), Math.min(1, Math.max(0, combinedRaw.z)));
-
-
-		return combined; //Vector.add(indirect, direct); //new Vector(Math.min(1.0, tempVector.x), Math.min(1.0, tempVector.y), Math.min(1.0, tempVector.z))
+		return combined;
 	}
 }
 
@@ -793,11 +722,6 @@ function rayEllipsoidIntersect(ray, ellipsoid, clipVal) {
 		var EmCdivA = Vector.divide(Vector.subtract(ray[0], new Vector(ellipsoid.x, ellipsoid.y, ellipsoid.z)), A); // (E-C)/A
 		var quadB = 2 * Vector.dot(dDivA, EmCdivA); // 2 * dot(D/A,(E-C)/A)
 		var quadC = Vector.dot(EmCdivA, EmCdivA) - 1; // dot((E-C)/A,(E-C)/A) - 1
-		// if (clipVal == 0) {
-		//     ray[0].toConsole("ray.orig: ");
-		//     ray[1].toConsole("ray.dir: ");
-		//     console.log("a:"+a+" b:"+b+" c:"+c);
-		// } // end debug case
 
 		var qsolve = solveQuad(quadA, quadB, quadC);
 		if (qsolve.length == 0)
@@ -831,10 +755,11 @@ function rayEllipsoidIntersect(ray, ellipsoid, clipVal) {
 
 // returns true if passed light is occluded from passed intersect/ellipsoid
 // by passed array of ellipsoids
-function isLightOccluded(L, isectPos, ellipsoids, triangles, currentlyEllipsoid, isectEllipsoid = 0, whichTriSet = 0, whichTriInSet = 0) {
+function isLightOccluded(L, isectPos, ellipsoids, currentlyEllipsoid, isectEllipsoid = 0) {
 	var d = 0; // which ellipsoid
 	var lightOccluded = false; // if light is occluded
 	var occluderIsect = {}; // occluder intersect details
+	var occList = [];
 	// console.log("testing for occlusions");
 
 	// check each ellipsoid up to intersected ellipsoid to see if it occludes
@@ -845,7 +770,9 @@ function isLightOccluded(L, isectPos, ellipsoids, triangles, currentlyEllipsoid,
 		} else if (occluderIsect.t > 1) { // light in front of intersection
 			d++; // on to next sphere
 		} else {
-			lightOccluded = true;
+			occList.push([d, occluderIsect]);
+			//lightOccluded = true;
+			d++;
 			// console.log("occlusion found from ellipsoid "+isectEllipsoid+" to "+e);
 		} // end if occlusion found
 	} // while all ellipsoids up to one intersected by eye
@@ -862,151 +789,15 @@ function isLightOccluded(L, isectPos, ellipsoids, triangles, currentlyEllipsoid,
 		} else if (occluderIsect.t > 1) { // light in front of intersection
 			d++; // on to next ellipsoid
 		} else {
-			lightOccluded = true;
+			occList.push([d, occluderIsect]);
+			//lightOccluded = true;
+			d++;
 			// console.log("occlusion found from ellipsoid "+isectEllipsoid+" to "+e);
 		} // end if occlusion found
 	} // while all ellipsoids after one intersected by eye
 
-	return lightOccluded;
-
-	/*// check each ellipsoid up to intersected ellipsoid to see if it occludes
-	let e = 0; // which ellipsoid
-	let f = 0;
-	let vertices = []; // to sore vertices of tri set iteratively
-	// console.log("testing for occlusions");
-	
-	while ((!lightOccluded) && ((e == whichTriSet) ? (f != whichTriInSet) : true)) {
-	
-		vertices = [];
-		for (let vertexCount = 0; vertexCount < 3; vertexCount++) {
-			vertices.push(triangles[e].vertices[triangles[e].triangles[f][vertexCount]])
-		}
-	
-		occluderIsect = rayTriangleIntersect([isectPos, L], vertices, 0);
-		if (!occluderIsect.exists) { // no intersection
-			if (f + 1 < triangles[e].triangles.length) {
-				f++;
-			} else {
-				f = 0;
-				e++;
-			}
-		} else if (occluderIsect.t > 1) { // light in front of intersection
-			if (f + 1 < triangles[e].triangles.length) {
-				f++;
-			} else {
-				f = 0;
-				e++;
-			}
-		} else {
-			lightOccluded = true;
-			// console.log("occlusion found from ellipsoid "+isectEllipsoid+" to "+e);
-		} // end if occlusion found
-	} // while all ellipsoids up to one intersected by eye
-	
-	// check each ellipsoid after intersected ellipsoid to see if it occludes
-	if (!currentlyEllipsoid) {
-		if (f + 1 < triangles[e].triangles.length) {
-			f++;
-		} else {
-			f = 0;
-			e++;
-		}
-	}
-	
-	while ((!lightOccluded) && (e < triangles.length)) {
-	
-		vertices = [];
-		for (let vertexCount = 0; vertexCount < 3; vertexCount++) {
-			vertices.push(triangles[e].vertices[triangles[e].triangles[f][vertexCount]])
-		}
-	
-		occluderIsect = rayTriangleIntersect([isectPos, L], vertices, 0);
-		// console.log("oisect: "+occluderIsect);
-		if (!occluderIsect.exists) { // no intersection
-			if (f + 1 < triangles[e].triangles.length) {
-				f++;
-			} else {
-				f = 0;
-				e++;
-			}
-		} else if (occluderIsect.t > 1) { // light in front of intersection
-			if (f + 1 < triangles[e].triangles.length) {
-				f++;
-			} else {
-				f = 0;
-				e++;
-			}
-		} else {
-			lightOccluded = true;
-			// console.log("occlusion found from ellipsoid "+isectEllipsoid+" to "+e);
-		} // end if occlusion found
-	} // while all ellipsoids after one intersected by eye
-	
-	return (lightOccluded);*/
-} // end is light occluded
-/*
-// color the passed intersection and ellipsoid
-function shadeIsect(isect, isectEllipsoid, lights, ellipsoids, inputTriangles) {
-	if (!(isect instanceof Object) || !(typeof (isectEllipsoid) === "number")
-		|| !(lights instanceof Array) || !(ellipsoids instanceof Array))
-		throw "shadeIsect: bad parameter passed";
-	else if (RENDER_METHOD == renderTypes.ISECT_ONLY) {
-		var r = ellipsoids[isectEllipsoid].diffuse[0];
-		var g = ellipsoids[isectEllipsoid].diffuse[1];
-		var b = ellipsoids[isectEllipsoid].diffuse[2];
-		return (new Color(255 * r, 255 * g, 255 * b, 255));
-	} else { // if not just rendering intersects
-		var c = new Color(0, 0, 0, 255); // init the ellipsoid color to black
-		var ellipsoid = ellipsoids[isectEllipsoid]; // ellipsoid intersected by eye
-		// console.log("shading pixel");
-	
-		// add light for each source
-		var lightOccluded = false; // if an occluder is found
-		var Lloc = new Vector(0, 0, 0);
-		for (var l = 0; l < lights.length; l++) {
-	
-			// add in the ambient light
-			c[0] += lights[l].ambient[0] * ellipsoid.ambient[0]; // ambient term r
-			c[1] += lights[l].ambient[1] * ellipsoid.ambient[1]; // ambient term g
-			c[2] += lights[l].ambient[2] * ellipsoid.ambient[2]; // ambient term b
-	
-			// check each other sphere to see if it occludes light
-			Lloc.set(lights[l].x, lights[l].y, lights[l].z);
-			var L = Vector.subtract(Lloc, isect.xyz); // light vector unnorm'd
-			// L.toConsole("L: ");
-			// console.log("isect: "+isect.xyz.x+", "+isect.xyz.y+", "+isect.xyz.z);
-	
-			// if light isn't occluded
-			var shadowed = (RENDER_METHOD == renderTypes.LIT_SHADOWS) ?
-				isLightOccluded(L, isect.xyz, ellipsoids, inputTriangles, true, isectEllipsoid, 0, 0) : false;
-	
-			//  L, isectPos, ellipsoids, triangles, currentlyEllipsoid, isectEllipsoid = 0, whichTriSet = 0, whichTriInSet = 0
-			if (!shadowed) {
-				// console.log("no occlusion found");
-				L = Vector.normalize(L);
-				// add in the diffuse light
-				var isectMCtr = Vector.subtract(isect.xyz, new Vector(ellipsoid.x, ellipsoid.y, ellipsoid.z));
-				var derivCoeffs = new Vector(ellipsoid.a * ellipsoid.a, ellipsoid.b * ellipsoid.b, ellipsoid.c * ellipsoid.c);
-				var derivCoeffs = Vector.divide(new Vector(2, 2, 2), derivCoeffs);
-				var N = Vector.normalize(Vector.multiply(isectMCtr, derivCoeffs)); // surface normal 
-				var diffFactor = Math.max(0, Vector.dot(N, L));
-				if (diffFactor > 0) {
-					c[0] += lights[l].diffuse[0] * ellipsoid.diffuse[0] * diffFactor;
-					c[1] += lights[l].diffuse[1] * ellipsoid.diffuse[1] * diffFactor;
-					c[2] += lights[l].diffuse[2] * ellipsoid.diffuse[2] * diffFactor;
-				} // end nonzero diffuse factor
-	
-			} // end if light not occluded
-		} // end for lights
-	
-		c[0] = 255 * Math.min(1, c[0]); // clamp max value to 1
-		c[1] = 255 * Math.min(1, c[1]); // clamp max value to 1
-		c[2] = 255 * Math.min(1, c[2]); // clamp max value to 1
-	
-		let returnVector = new Vector(c[0], c[1], c[2]);
-		return (returnVector);
-	} // if not just rendering isect
-}*/
+	return occList;
+}
 
 function getInputLights() {
 	return [
@@ -1015,16 +806,6 @@ function getInputLights() {
 	]
 }
 
-// Index of sphere which is designated to be refracting light
-const REFRACTION_SPHERE_IDX = 1;
-// Number of random samples per pixels
-const pixelSampleTotalAmount = 2;
-// The maximum recursion depth for an indirect ray
-const LONGEST_BOUNCE_DEPTH = 3;
-// Number of rays initially casted from the first hemisphere
-const INITIAL_BOUNCE_AMOUNT = 1;
-// Number of samples to a randomly selected light
-var numberOfLightSamples = 3;
 /**
  * This function accepts the context to be written do, iterates through the input triangles
  * which is defined as a global constant and renders the scene from the constant global eye location
@@ -1037,8 +818,8 @@ function rayCastTriangles(context) {
 	//var inputTriangles = getJSONFile(INPUT_TRIANGLES_URL, "triangles");
 	var inputTriangles = getInputTriangles();
 	var inputEllipsoids = getJSONFile(INPUT_SPHERES_URL, "ellipsoids");
-	
-	
+
+
 	var inputLights = getJSONFile(INPUT_LIGHTS_URL, "lights");
 	//var inputLights = getInputLights();
 
@@ -1126,13 +907,8 @@ function rayCastTriangles(context) {
 
 									// intersection, rayToDestination, lights, inputTriangles, inputEllipsoids, currentlyEllipsoid, 
 									// whichEllipsoid = 0, whichTriSet = 0, whichTriInSet = 0, onlyDirect = false
-									let resultingRadiance = radiance(intersection, dirFromIntersectionToEye, inputLights, inputTriangles, inputEllipsoids, false, 0, triSetIdx, triInSetIdx, false, 0);
-
+									let resultingRadiance = radiance(intersection, dirFromIntersectionToEye, inputLights, inputTriangles, inputEllipsoids, false, 0, triSetIdx, triInSetIdx, 0);
 									tempColor = Vector.scale(1.0, resultingRadiance);
-
-
-									//console.log(newTriDiffuse);
-									//c.change(resultingRadiance.x * 255, resultingRadiance.y * 255, resultingRadiance.z * 255, 255);
 								}
 							}
 
@@ -1150,7 +926,7 @@ function rayCastTriangles(context) {
 								let dirFromIntersectionToEye = Vector.scale(-1.0, Dir);
 								//isect, isectEllipsoid, lights, ellipsoids, inputTriangles
 								//resultingRadiance = shadeIsect(isect, e, inputLights, inputEllipsoids, inputTriangles);
-								resultingRadiance = radiance(isect, dirFromIntersectionToEye, inputLights, inputTriangles, inputEllipsoids, true, e, 0, 0, false, 0);
+								resultingRadiance = radiance(isect, dirFromIntersectionToEye, inputLights, inputTriangles, inputEllipsoids, true, e, 0, 0, 0);
 								tempColor = Vector.scale(1.0, resultingRadiance);
 							} // end if closest yet
 						}
@@ -1165,10 +941,8 @@ function rayCastTriangles(context) {
 				drawPixel(imagedata, x, y, c);
 				wx += wxd;
 			}
-
 			wy += wyd;
 		}
-
 		context.putImageData(imagedata, 0, 0);
 	}
 }
@@ -1197,25 +971,18 @@ function getPixelLocat(pixelNum, w, h) {
 
 // draw a pixel at x,y using color
 function drawPixel(imagedata, x, y, color) {
-	try {
-		if ((typeof (x) !== "number") || (typeof (y) !== "number"))
-			throw "drawpixel location not a number";
-		else if ((x < 0) || (y < 0) || (x >= imagedata.width) || (y >= imagedata.height))
-			throw "drawpixel location outside of image";
-		else if (color instanceof Color) {
-			var pixelindex = (y * imagedata.width + x) * 4;
-			imagedata.data[pixelindex] = color[0];
-			imagedata.data[pixelindex + 1] = color[1];
-			imagedata.data[pixelindex + 2] = color[2];
-			imagedata.data[pixelindex + 3] = color[3];
-		} else
-			throw "drawpixel color is not a Color";
-	} // end try
-
-	catch (e) {
-		console.log(e);
-		console.log(color);
-	}
+	if ((typeof (x) !== "number") || (typeof (y) !== "number"))
+		throw "drawpixel location not a number";
+	else if ((x < 0) || (y < 0) || (x >= imagedata.width) || (y >= imagedata.height))
+		throw "drawpixel location outside of image";
+	else if (color instanceof Color) {
+		var pixelindex = (y * imagedata.width + x) * 4;
+		imagedata.data[pixelindex] = color[0];
+		imagedata.data[pixelindex + 1] = color[1];
+		imagedata.data[pixelindex + 2] = color[2];
+		imagedata.data[pixelindex + 3] = color[3];
+	} else
+		throw "drawpixel color is not a Color";
 } // end drawPixel
 
 
@@ -1237,8 +1004,19 @@ const renderTypes = {
 
 const RENDER_METHOD = renderTypes.LIT_SHADOWS; // show intersections unlit in white
 
-
 var Eye = new Vector(0.5, 0.5, -0.5); // set the eye position
+
+
+// Index of sphere which is designated to be refracting light
+const REFRACTION_SPHERE_IDX = 1;
+// Number of random samples per pixels
+const pixelSampleTotalAmount = 4;
+// The maximum recursion depth for an indirect ray
+const LONGEST_BOUNCE_DEPTH = 4;
+// Number of rays initially casted from the first hemisphere
+const INITIAL_BOUNCE_AMOUNT = 5;
+// Number of samples to a randomly selected light
+var numberOfLightSamples = 1;
 
 /**
  * This function runs the overall program and makes calls to the rendering algorithms
