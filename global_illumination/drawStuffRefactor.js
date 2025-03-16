@@ -1010,11 +1010,11 @@ var Eye = new Vector(0.5, 0.5, -0.5); // set the eye position
 // Index of sphere which is designated to be refracting light
 const REFRACTION_SPHERE_IDX = 1;
 // Number of random samples per pixels
-const pixelSampleTotalAmount = 4;
+const pixelSampleTotalAmount = 10;
 // The maximum recursion depth for an indirect ray
-const LONGEST_BOUNCE_DEPTH = 4;
+const LONGEST_BOUNCE_DEPTH = 6;
 // Number of rays initially casted from the first hemisphere
-const INITIAL_BOUNCE_AMOUNT = 5;
+const INITIAL_BOUNCE_AMOUNT = 7;
 // Number of samples to a randomly selected light
 var numberOfLightSamples = 1;
 
