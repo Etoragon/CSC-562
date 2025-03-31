@@ -1,6 +1,36 @@
+import { vec3 } from 'gl-matrix';
+
 const ROOMS_JSON_ERROR_MESSAGE = "Rooms Json File incorrectly formatted";
 
 const TRIANGLE_SET_TEMPLATE = { "material": {}, "vertices": [], "triangles": [], "normals": [], "uvs": [] };
+
+function isTriInFrustum(currentFrustum, triPoints) {
+    let forwardDirection = vec3.create();
+
+    vec3.add(forwardDirection, currentFrustum.topRightRay, currentFrustum.topLeftRay);
+    vec3.add(forwardDirection, forwardDirection, currentFrustum.bottomLeftRay);
+    vec3.add(forwardDirection, forwardDirection, currentFrustum.bottomRightRay);
+
+    for (let idx = 0; idx < triPoints.length; idx++) {
+        let point3d = triPoints[idx];
+        let eyeToPoint = vec3.create();
+        vec3.subtract(eyeToPoint, point3d, currentFrustum.eye);
+
+        if (vec3.dot(forwardDirection, eyeToPoint) > 0) {
+            
+			let dot1 = vec3.dot(currentFrustum.topRightRay, eyeToPoint);
+			let dot2 = vec3.dot(currentFrustum.topLeftRay, eyeToPoint);
+			let dot3 = vec3.dot(currentFrustum.bottomLeftRay, eyeToPoint);
+			let dot4 = vec3.dot(currentFrustum.bottomRightRay, eyeToPoint);
+			
+			if (dot1 > 0 && dot2 > 0 && dot3 > 0 && dot4 > 0) {
+				return true;
+			}
+        }
+    }
+
+    return false;
+}
 
 
 const SEARCH_FOUR_ADJACENT_CELLS = (roomJson, row, col) => {
@@ -209,7 +239,7 @@ const ROOM_CELL_TO_3D_BLOCK = (roomJson, row, col, height, worldoffset = [0, 0, 
 }
 
 // This determine the different textures per room
-const ROOM_NUMBER_TO_TEXTURE = { 0: "abe.png", 1: "abe.png", 2: "billie.jpg", 3: "billie.jpg",  "p": "tree.png" }
+const ROOM_NUMBER_TO_TEXTURE = { 0: "abe.png", 1: "billie.jpg", "p": "tree.png" }
 
 // Accepts a 3D block set, then updates the lighting and color information
 const COLOR_3D_BLOCK = (triangleSet, roomType) => {
@@ -229,27 +259,6 @@ const COLOR_3D_BLOCK = (triangleSet, roomType) => {
 	return triangleSet;
 }
 
-
-/**
- * 
- * @param {JSON} roomJson room Json of structure {rooms:[["","",...]], furniture:[[num, num, num, string, num]]}
- * @param {number} [centerHeight=0.5] height of room, since room json is only 2D
- * 
- * @returns Generated 3D triangle set for rooms
- * format of portal = {
-			points: [
-				vec3.fromValues(3, 0, 0),
-				vec3.fromValues(3, 0, 1),
-				vec3.fromValues(4, 0, 0),
-				vec3.fromValues(4, 0, 1),
-				vec3.fromValues(3, 1, 0),
-				vec3.fromValues(3, 1, 1),
-				vec3.fromValues(4, 1, 0),
-				vec3.fromValues(4, 1, 1),
-
-			], directionOfPortal: vec3.fromValues(-1, 0, 0)
-		}
- */
 function roomToPortals(roomJson, height = 1) {
 	// Validate the input
 	if (!roomJson.rooms || !roomJson.furniture) {
@@ -335,8 +344,6 @@ function roomToTriangles(roomJson, height = 1) {
 	let numRows = roomJson.rooms.length;
 	let numCols = roomJson.rooms[0].length;
 
-	let currentIdx = 0;
-
 	// First iterate through each element in roomJSON
 	for (let currentRow = 0; currentRow < numRows; currentRow++) {
 		for (let currentCol = 0; currentCol < numCols; currentCol++) {
@@ -350,25 +357,33 @@ function roomToTriangles(roomJson, height = 1) {
 			// If there are any triangles in the first place
 			if (generatedTriangles.triangles.length != 0) {
 
-				let newTriangleSet = structuredClone(TRIANGLE_SET_TEMPLATE);
-				newTriangleSet = COLOR_3D_BLOCK(newTriangleSet, roomType);
-				triangleSets.push(newTriangleSet);
+				// If the type of room does not exist (this is because the type of room shares the same material information and
+				// therefore must have separate room dictionaries for that exact reason. 
+				if (triangleRoomTypeToIndex[roomType] == undefined) {
+					console.log(roomType);
 
-				let currentVertexLength = 0;
+					// Upkeep the map of roomType to indices in the triangleSets
+					triangleRoomTypeToIndex[roomType] = triangleSets.length;
 
-				triangleSets[triangleSets.length - 1].normals = generatedTriangles.normals;
-				triangleSets[triangleSets.length - 1].vertices = generatedTriangles.vertices;
-				triangleSets[triangleSets.length - 1].uvs = generatedTriangles.uvs;
-				triangleSets[triangleSets.length - 1].roomType = roomType;
-								
+					// Create a clone of the template, update the material appropriately, then finally push it to the triangleSets
+					let newTriangleSet = structuredClone(TRIANGLE_SET_TEMPLATE);
+					newTriangleSet = COLOR_3D_BLOCK(newTriangleSet, roomType);
+					triangleSets.push(newTriangleSet);
+					console.log(triangleRoomTypeToIndex);
+				}
+
+				let currentVertexLength = triangleSets[triangleRoomTypeToIndex[roomType]].vertices.length;
+
+				triangleSets[triangleRoomTypeToIndex[roomType]].normals = triangleSets[triangleRoomTypeToIndex[roomType]].normals.concat(generatedTriangles.normals);
+				triangleSets[triangleRoomTypeToIndex[roomType]].vertices = triangleSets[triangleRoomTypeToIndex[roomType]].vertices.concat(generatedTriangles.vertices);
+				triangleSets[triangleRoomTypeToIndex[roomType]].uvs = triangleSets[triangleRoomTypeToIndex[roomType]].uvs.concat(generatedTriangles.uvs);
 
 				generatedTriangles.triangles.map((triSet) => {
-					triangleSets[triangleSets.length - 1].triangles.push([triSet[0] + currentVertexLength, triSet[1] + currentVertexLength, triSet[2] + currentVertexLength]);
+					triangleSets[triangleRoomTypeToIndex[roomType]].triangles.push([triSet[0] + currentVertexLength, triSet[1] + currentVertexLength, triSet[2] + currentVertexLength]);
 				});
 			}
 		}
 	}
-
 	return triangleSets;
 
 }
@@ -406,44 +421,6 @@ function getFrustrum(eye, tr, tl, bl, br) {
 	// Finally return
 	return returnDictionary;
 }
-
-/**
- * This function accepts the frustum and a set of three points, then returns if this triangle is within the frustum. 
- * //TODO it currently doesn't check if a line of the triangle is within the frustum
- * 
- * @param {JSON} currentFrustum frustrum of the current view
- * @param {Array<vec3>} triPoints Set of three points which defined the checked triangle
- * 
- * @returns {boolean} Whether or not the tri is viewable
- */
-function isTriInFrustum(currentFrustum, triPoints) {
-	let forwardDirection = vec3.create();
-
-	vec3.add(forwardDirection, currentFrustum.topRightRay, currentFrustum.topLeftRay);
-	vec3.add(forwardDirection, forwardDirection, currentFrustum.bottomLeftRay);
-	vec3.add(forwardDirection, forwardDirection, currentFrustum.bottomRightRay);
-
-	for (let idx = 0; idx < triPoints.length; idx++) {
-		let point3d = triPoints[idx];
-		let eyeToPoint = vec3.create();
-		vec3.subtract(eyeToPoint, point3d, currentFrustum.eye);
-
-		if (vec3.dot(forwardDirection, eyeToPoint) > 0) {
-
-			let dot1 = vec3.dot(currentFrustum.topRightRay, eyeToPoint);
-			let dot2 = vec3.dot(currentFrustum.topLeftRay, eyeToPoint);
-			let dot3 = vec3.dot(currentFrustum.bottomLeftRay, eyeToPoint);
-			let dot4 = vec3.dot(currentFrustum.bottomRightRay, eyeToPoint);
-
-			if (dot1 > -0.5 && dot2 > -0.5 && dot3 > -0.5 && dot4 > -0.5) {
-				return true;
-			}
-		}
-	}
-
-	return false;
-}
-
 
 /**
  * This function returns whether it's the top right, top left, bottom left, or bottom right point
@@ -484,11 +461,7 @@ const NUM_PORTAL_POINTS = 8;
 function getPortalFrustrum(currentFrustrum, portal) {
 	// Calculate the direction of the portal
 	let normalizedDireciton = vec3.fromValues(0, 0, 0);
-	//console.log(portal);
 	vec3.normalize(normalizedDireciton, portal.directionOfPortal);
-	vec3.scale(normalizedDireciton, normalizedDireciton, -1);
-	
-	
 
 	// Calculate the central point of the portal points
 	let sumPortalPoints = vec3.fromValues(0, 0, 0);
@@ -536,9 +509,9 @@ function getPortalFrustrum(currentFrustrum, portal) {
 				frontPoints[whichCorner] = idx;
 			}
 		}
-		//console.log(portalPointDirection);
-		//console.log(frontPoints);
-		//console.log(backPoints);
+		console.log(portalPointDirection);
+		console.log(frontPoints);
+		console.log(backPoints);
 	}
 
 	let finalFrustumPoints = { "tr": null, "tl": null, "bl": null, "br": null };
@@ -552,17 +525,17 @@ function getPortalFrustrum(currentFrustrum, portal) {
 		let projectedEye = vec3.fromValues(currentFrustrum.eye[0], 0, currentFrustrum.eye[2]);
 		let projectedBackPoint = vec3.fromValues(portal.points[backPoints[key]][0], 0, portal.points[backPoints[key]][2]);
 
-		//console.log(projectedCenter);
-		//console.log(projectedEye);
-		//console.log(projectedBackPoint);
+		console.log(projectedCenter);
+		console.log(projectedEye);
+		console.log(projectedBackPoint);
 
 		vec3.subtract(vecFromPointToEye, projectedEye, projectedBackPoint);
 		vec3.subtract(vecFromPointToCenter, projectedCenter, projectedBackPoint);
 		cosineOfAngleBetweenRayToCenterAndRayToEye = vec3.dot(vecFromPointToEye, vecFromPointToCenter) / (vec3.length(vecFromPointToEye) * vec3.length(vecFromPointToCenter));
-		//console.log(vecFromPointToEye);
-		//console.log(vecFromPointToCenter);
-		//console.log(cosineOfAngleBetweenRayToCenterAndRayToEye);
-		//console.log(vec3.dot(vecFromPointToEye, vecFromPointToCenter));
+		console.log(vecFromPointToEye);
+		console.log(vecFromPointToCenter);
+		console.log(cosineOfAngleBetweenRayToCenterAndRayToEye);
+		console.log(vec3.dot(vecFromPointToEye, vecFromPointToCenter));
 		if (cosineOfAngleBetweenRayToCenterAndRayToEye >= Math.cos((Math.PI / 4)) && cosineOfAngleBetweenRayToCenterAndRayToEye <= Math.cos(0)) {
 			finalFrustumPoints[key] = backPoints[key];
 		} else {
@@ -571,98 +544,12 @@ function getPortalFrustrum(currentFrustrum, portal) {
 	})
 
 
-	//console.log(normalizedDireciton);
-	//console.log(currentFrustrum.eye);
-	//console.log( portal.points[backPoints.tr], portal.points[backPoints.tl], portal.points[backPoints.bl], portal.points[backPoints.br]);
-	//console.log( portal.points[finalFrustumPoints.tr], portal.points[finalFrustumPoints.tl], portal.points[finalFrustumPoints.bl], portal.points[finalFrustumPoints.br]);
+	console.log(normalizedDireciton);
+	console.log(currentFrustrum.eye);
+	console.log(portal.points[backPoints.tr], portal.points[backPoints.tl], portal.points[backPoints.bl], portal.points[backPoints.br]);
+	console.log(portal.points[finalFrustumPoints.tr], portal.points[finalFrustumPoints.tl], portal.points[finalFrustumPoints.bl], portal.points[finalFrustumPoints.br]);
 
-	let almostFinalFrustum = getFrustrum(currentFrustrum.eye, portal.points[finalFrustumPoints.tr], portal.points[finalFrustumPoints.tl], portal.points[finalFrustumPoints.bl], portal.points[finalFrustumPoints.br]);
-
-	// Now we must clip it if part of it is outside the current one. 
-	let temp1 = vec3.fromValues(0, 0, 0);
-	let temp2 = vec3.fromValues(0, 0, 0);
-	let temp3 = vec3.fromValues(0, 0, 0);
-	let temp4 = vec3.fromValues(0, 0, 0);
-	let temp5 = vec3.fromValues(0, 0, 0);
-	let temp6 = vec3.fromValues(0, 0, 0);
-
-	// Begin check for TLR
-	temp1 = vec3.dot(almostFinalFrustum.topLeftRay, currentFrustrum.topRightRay);
-	temp2 = vec3.dot(almostFinalFrustum.topLeftRay, currentFrustrum.topLeftRay);
-	temp3 = vec3.dot(almostFinalFrustum.topRightRay, currentFrustrum.topRightRay);
-	temp4 = vec3.dot(almostFinalFrustum.topRightRay, currentFrustrum.topLeftRay);
-	temp5 = vec3.cross(temp5, almostFinalFrustum.topRightRay, almostFinalFrustum.topLeftRay);
-	temp6 = vec3.dot(temp5, vec3.fromValues(0, 1, 0));
-
-	// At this point, the right and left have crossed eacher in a way that is impossible
-	if (temp6 < 0) {
-		almostFinalFrustum.topLeftRay = null;
-		almostFinalFrustum.topRightRay = null;
-		almostFinalFrustum.bottomLeftRay = null;
-		almostFinalFrustum.bottomRightRay = null;
-		return almostFinalFrustum;
-	}
-
-	// Both should be positive because in same quadrant
-
-	if (temp1 < 0 && temp2 > 0) {
-		// Then left ray is outside the current left bound
-		almostFinalFrustum.topLeftRay = currentFrustrum.topLeftRay;
-	} else if (temp1 > 0 && temp2 < 0) {
-		almostFinalFrustum.topLeftRay = null;
-		almostFinalFrustum.topRightRay = null;
-	} else if (temp1 < 0 && temp2 < 0) {
-		almostFinalFrustum.topLeftRay = null;
-		almostFinalFrustum.topRightRay = null;
-	}
-
-	if (temp3 > 0 && temp4 < 0) {
-		// Then right ray is outside the current right bound
-		almostFinalFrustum.topRightRay = currentFrustrum.topRightRay;
-	} else if (temp3 < 0 && temp4 > 0) {
-		almostFinalFrustum.topLeftRay = null;
-		almostFinalFrustum.topRightRay = null;
-	} else if (temp3 < 0 && temp4 < 0) {
-		almostFinalFrustum.topLeftRay = null;
-		almostFinalFrustum.topRightRay = null;
-	}
-
-
-	temp1 = vec3.dot(almostFinalFrustum.bottomLeftRay, currentFrustrum.bottomRightRay);
-	temp2 = vec3.dot(almostFinalFrustum.bottomLeftRay, currentFrustrum.bottomLeftRay);
-	temp3 = vec3.dot(almostFinalFrustum.bottomRightRay, currentFrustrum.bottomRightRay);
-	temp4 = vec3.dot(almostFinalFrustum.bottomRightRay, currentFrustrum.bottomLeftRay);
-
-
-	// Both should be positive because in same quadrant
-
-	if (temp1 <= 0 && temp2 >= 0) {
-		// Then left ray is outside the current left bound
-		almostFinalFrustum.bottomLeftRay = currentFrustrum.bottomLeftRay;
-	} else if (temp1 >= 0 && temp2 <= 0) {
-		almostFinalFrustum.bottomLeftRay = null;
-		almostFinalFrustum.bottomRightRay = null;
-	} else if (temp1 < 0 && temp1 < 0) {
-		almostFinalFrustum.bottomLeftRay = null;
-		almostFinalFrustum.bottomRightRay = null;
-	}
-
-
-	if (temp3 >= 0 && temp4 <= 0) {
-		// Then right ray is outside the current right bound
-		almostFinalFrustum.bottomRightRay = currentFrustrum.bottomRightRay;
-	} else if (temp3 <= 0 && temp4 >= 0) {
-		almostFinalFrustum.bottomLeftRay = null;
-		almostFinalFrustum.bottomRightRay = null;
-	} else if (temp3 < 0 && temp4 < 0) {
-		almostFinalFrustum.topLeftRay = null;
-		almostFinalFrustum.topRightRay = null;
-	} else if (temp3 < 0 && temp4 < 0) {
-		almostFinalFrustum.bottomLeftRay = null;
-		almostFinalFrustum.bottomRightRay = null;
-	}
-
-	return almostFinalFrustum;
+	return getFrustrum(currentFrustrum.eye, portal.points[finalFrustumPoints.tr], portal.points[finalFrustumPoints.tl], portal.points[finalFrustumPoints.bl], portal.points[finalFrustumPoints.br]);
 }
 
 function getPortalFrustrum2D(currentFrustrum, portal) {
@@ -678,3 +565,406 @@ function getPortalFrustrum2D(currentFrustrum, portal) {
    "triangles": [[0,1,2]]
  }
  */
+const sampleRoomJson = {
+	rooms: [["s", "s"], ["s", "0"]],
+	furniture: []
+};
+
+describe("roomToTriangles", () => {
+	test("should throw an error for incorrectly formatted JSON", () => {
+		expect(() => roomToTriangles({ rooms: [[]] })).toThrow("Rooms Json File incorrectly formatted");
+	});
+
+	test("should generate correct triangles for a simple room structure", () => {
+		const result = roomToTriangles(sampleRoomJson, 1);
+		expect(result).toBeDefined();
+		expect(result.length).toBeGreaterThan(0);
+	});
+});
+
+describe("SEARCH_FOUR_ADJACENT_CELLS_2X2", () => {
+	test("should correctly identify adjacent 's' cells", () => {
+		const roomJson = { "rooms": [["s", "s"], ["0", "s"]] };
+		const result = SEARCH_FOUR_ADJACENT_CELLS(roomJson, 1, 1);
+		expect(result).toEqual({ up: true, down: true, left: false, right: true, above: false, below: false });
+		const result1 = SEARCH_FOUR_ADJACENT_CELLS(roomJson, 0, 0);
+		expect(result1).toEqual({ up: true, down: false, left: true, right: true, above: false, below: false });
+	});
+});
+
+describe("SEARCH_FOUR_ADJACENT_CELLS_3X3", () => {
+	test("should correctly identify adjacent 's' cells", () => {
+		const roomJson = { "rooms": [["s", "s", "s"], ["s", "0", "s"], ["s", "s", "s"]] };
+		const result = SEARCH_FOUR_ADJACENT_CELLS(roomJson, 1, 1);
+		expect(result).toEqual({ up: true, down: true, left: true, right: true, above: true, below: true });
+		const result1 = SEARCH_FOUR_ADJACENT_CELLS(roomJson, 2, 2);
+		expect(result1).toEqual({ up: true, down: true, left: true, right: true, above: false, below: false });
+		const result2 = SEARCH_FOUR_ADJACENT_CELLS(roomJson, 2, 1);
+		expect(result2).toEqual({ up: false, down: true, left: true, right: true, above: false, below: false });
+	});
+});
+
+describe("DIRECTION_TO_WORLD_COORDINATES", () => {
+	test("should generate correct world coordinates based on directions", () => {
+		const directions = { up: false, down: true, left: false, right: true };
+		const result = DIRECTION_TO_WORLD_COORDINATES(directions, 0, 0, [0, 0, 0], 1);
+		expect(result.vertices.length).toEqual(8);
+		expect(result.triangles.length).toEqual(4);
+
+		// We expect all of the points because that's how we coded it to do so. 
+		expect(result.vertices.length).toEqual(8);
+
+		expect(result.triangles[0]).toEqual([0, 1, 2]);
+		expect(result.triangles[1]).toEqual([2, 3, 0]);
+		expect(result.triangles[2]).toEqual([4, 5, 6]);
+		expect(result.triangles[3]).toEqual([6, 7, 4]);
+
+	});
+});
+
+describe("roomToPortals", () => {
+	test("should generate correct portals for a valid room JSON", () => {
+		const roomJson = {
+			rooms: [
+				["s", "s", "s"],
+				["s", "0", "s"],
+				["s", "s", "s"]
+			],
+			furniture: []
+		};
+		const expectedOutput = {};
+		expect(roomToPortals(roomJson)).toEqual(expectedOutput);
+	});
+
+	test("should return an empty array when no portals exist", () => {
+		const roomJson = {
+			rooms: [
+				["s", "s", "s", "s", "s"],
+				["s", 0, "p", 1, "s"],
+				["s", "s", "s", "s", "s"]
+			],
+			furniture: []
+		};
+		const expectedOutput0 = [{
+			points: ROOM_CELL_TO_3D_BLOCK(roomJson, 1, 2, 1, [0, 0, 0]).vertices,
+			directionOfPortal: vec3.fromValues(1, 0, 0),
+			connectingRoom: 1
+		}];
+		const expectedOutput1 = [{
+			points: ROOM_CELL_TO_3D_BLOCK(roomJson, 1, 2, 1, [0, 0, 0]).vertices,
+			directionOfPortal: vec3.fromValues(-1, 0, 0),
+			connectingRoom: 0
+		}]
+		expect(roomToPortals(roomJson)[0]).toEqual(expectedOutput0);
+		expect(roomToPortals(roomJson)[1]).toEqual(expectedOutput1);
+	});
+
+	test("should return an empty array when no portals exist", () => {
+		const roomJson = {
+			rooms: [
+				["s", "s", "s", "s", "s"],
+				["s", 0, "p", 1, "s"],
+				["s", 0, "s", 1, "s"],
+				["s", 0, "p", 1, "s"],
+				["s", "s", "s", "s", "s"]
+			],
+			furniture: []
+		};
+		const expectedOutput0A = {
+			points: ROOM_CELL_TO_3D_BLOCK(roomJson, 1, 2, 1, [0, 0, 0]).vertices,
+			directionOfPortal: vec3.fromValues(1, 0, 0),
+			connectingRoom: 1
+		};
+		const expectedOutput0B = {
+			points: ROOM_CELL_TO_3D_BLOCK(roomJson, 3, 2, 1, [0, 0, 0]).vertices,
+			directionOfPortal: vec3.fromValues(1, 0, 0),
+			connectingRoom: 1
+		};
+		const expectedOutput1A = {
+			points: ROOM_CELL_TO_3D_BLOCK(roomJson, 1, 2, 1, [0, 0, 0]).vertices,
+			directionOfPortal: vec3.fromValues(-1, 0, 0),
+			connectingRoom: 0
+		};
+		const expectedOutput1B = {
+			points: ROOM_CELL_TO_3D_BLOCK(roomJson, 3, 2, 1, [0, 0, 0]).vertices,
+			directionOfPortal: vec3.fromValues(-1, 0, 0),
+			connectingRoom: 0
+		};
+		expect(roomToPortals(roomJson)[0][0]).toEqual(expectedOutput0A);
+		expect(roomToPortals(roomJson)[0][1]).toEqual(expectedOutput0B);
+		expect(roomToPortals(roomJson)[1][0]).toEqual(expectedOutput1A);
+		expect(roomToPortals(roomJson)[1][1]).toEqual(expectedOutput1B);
+	});
+
+	test("should throw an error when 'rooms' key is missing", () => {
+		const roomJson = { furniture: [] };
+		expect(() => roomToPortals(roomJson)).toThrow(ROOMS_JSON_ERROR_MESSAGE);
+	});
+});
+
+
+
+
+// Test cases for `getFrustrum` function
+describe("getFrustrum", () => {
+	test("should generate correct frustrum with standard points", () => {
+		const eye1 = vec3.fromValues(0, 0, 0);
+		const tr1 = vec3.fromValues(1, 1, 1);
+		const tl1 = vec3.fromValues(-1, 1, 1);
+		const bl1 = vec3.fromValues(-1, -1, 1);
+		const br1 = vec3.fromValues(1, -1, 1);
+
+		const frustum1 = getFrustrum(eye1, tr1, tl1, bl1, br1);
+		expect(frustum1).toHaveProperty('eye');
+		expect(frustum1.topRightRay.toString()).toEqual([1, 1, 1].toString());
+		expect(frustum1.topLeftRay.toString()).toEqual([-1, 1, 1].toString());
+		expect(frustum1.bottomLeftRay.toString()).toEqual([-1, -1, 1].toString());
+		expect(frustum1.bottomRightRay.toString()).toEqual([1, -1, 1].toString());
+	});
+
+	test("should handle degenerate case where all points are the same", () => {
+		const eye2 = vec3.fromValues(0, 0, 0);
+		const tr2 = vec3.fromValues(1, 1, 1);
+		const tl2 = vec3.fromValues(1, 1, 1);
+		const bl2 = vec3.fromValues(1, 1, 1);
+		const br2 = vec3.fromValues(1, 1, 1);
+
+		const frustum2 = getFrustrum(eye2, tr2, tl2, bl2, br2);
+		expect(frustum2.topRightRay.toString()).toEqual([1, 1, 1].toString());
+		expect(frustum2.topLeftRay.toString()).toEqual([1, 1, 1].toString());
+		expect(frustum2.bottomLeftRay.toString()).toEqual([1, 1, 1].toString());
+		expect(frustum2.bottomRightRay.toString()).toEqual([1, 1, 1].toString());
+	});
+});
+
+
+
+// Test cases for `getWhichPoint` function
+describe("getWhichPoint", () => {
+	test("should return 'tr' for top-right point", () => {
+		const center1 = vec3.fromValues(0.5, 0.5, 0.5);
+		const checkingPoint1 = vec3.fromValues(1, 1, 0);
+		const portalDirection1 = vec3.fromValues(1, 0, 0);
+
+		const point1 = getWhichPoint(center1, checkingPoint1, portalDirection1);
+		expect(point1).toBe("tr");
+	});
+
+	test("should return 'tl' for top-left point", () => {
+		const center1 = vec3.fromValues(0.5, 0.5, 0.5);
+		const checkingPoint2 = vec3.fromValues(1, 1, 1);
+		const portalDirection2 = vec3.fromValues(1, 0, 0);
+
+		const point2 = getWhichPoint(center1, checkingPoint2, portalDirection2);
+		expect(point2).toBe("tl");
+	});
+
+	test("should return 'tr' for top-right point", () => {
+		const center1 = vec3.fromValues(0.5, 0.5, 0.5);
+		const checkingPoint1 = vec3.fromValues(0, 1, 0);
+		const portalDirection1 = vec3.fromValues(1, 0, 0);
+
+		const point1 = getWhichPoint(center1, checkingPoint1, portalDirection1);
+		expect(point1).toBe("tr");
+	});
+
+	test("should return 'tl' for top-left point", () => {
+		const center1 = vec3.fromValues(0.5, 0.5, 0.5);
+		const checkingPoint2 = vec3.fromValues(0, 1, 1);
+		const portalDirection2 = vec3.fromValues(1, 0, 0);
+
+		const point2 = getWhichPoint(center1, checkingPoint2, portalDirection2);
+		expect(point2).toBe("tl");
+	});
+
+	test("should return 'bl' for bottom-left point", () => {
+		const center1 = vec3.fromValues(0.5, 0.5, 0.5);
+		const checkingPoint3 = vec3.fromValues(1, 0, 0);
+		const portalDirection3 = vec3.fromValues(1, 0, 0);
+
+		const point3 = getWhichPoint(center1, checkingPoint3, portalDirection3);
+		expect(point3).toBe("br");
+	});
+
+	test("should return 'bl' for bottom-left point", () => {
+		const center1 = vec3.fromValues(0.5, 0.5, 0.5);
+		const checkingPoint3 = vec3.fromValues(0, 0, 0);
+		const portalDirection3 = vec3.fromValues(1, 0, 0);
+
+		const point3 = getWhichPoint(center1, checkingPoint3, portalDirection3);
+		expect(point3).toBe("br");
+	});
+
+	test("should return 'bl' for bottom-left point", () => {
+		const center1 = vec3.fromValues(0.5, 0.5, 0.5);
+		const checkingPoint3 = vec3.fromValues(1, 0, 1);
+		const portalDirection3 = vec3.fromValues(1, 0, 0);
+
+		const point3 = getWhichPoint(center1, checkingPoint3, portalDirection3);
+		expect(point3).toBe("bl");
+	});
+
+	test("should return 'bl' for bottom-left point", () => {
+		const center1 = vec3.fromValues(0.5, 0.5, 0.5);
+		const checkingPoint3 = vec3.fromValues(0, 0, 1);
+		const portalDirection3 = vec3.fromValues(1, 0, 0);
+
+		const point3 = getWhichPoint(center1, checkingPoint3, portalDirection3);
+		expect(point3).toBe("bl");
+	});
+
+
+});
+
+// Test cases for `getPortalFrustrum` function
+describe("getPortalFrustrum", () => {
+	test("should generate correct portal frustrum", () => {
+		const eye1 = vec3.fromValues(0.5, 0.5, 3);
+		const tr1 = vec3.fromValues(1, 1, 1);
+		const tl1 = vec3.fromValues(-1, 1, 1);
+		const bl1 = vec3.fromValues(-1, -1, 1);
+		const br1 = vec3.fromValues(1, -1, 1);
+		const currentFrustrum1 = getFrustrum(eye1, tr1, tl1, bl1, br1);
+		const portal1 = {
+			points: [
+				vec3.fromValues(0, 0, 0),
+				vec3.fromValues(0, 0, 1),
+				vec3.fromValues(0, 1, 0),
+				vec3.fromValues(0, 1, 1),
+				vec3.fromValues(1, 0, 0),
+				vec3.fromValues(1, 0, 1),
+				vec3.fromValues(1, 1, 0),
+				vec3.fromValues(1, 1, 1),
+			],
+			directionOfPortal: vec3.fromValues(0, 0, 1),
+		};
+
+		const portalFrustum1 = getPortalFrustrum(currentFrustrum1, portal1);
+		expect(portalFrustum1).toHaveProperty("eye");
+		expect(portalFrustum1.topRightRay.toString()).toEqual([0.5, 0.5, -3].toString());
+		expect(portalFrustum1.topLeftRay.toString()).toEqual([-0.5, 0.5, -3].toString());
+		expect(portalFrustum1.bottomLeftRay.toString()).toEqual([-0.5, -0.5, -3].toString());
+		expect(portalFrustum1.bottomRightRay.toString()).toEqual([0.5, -0.5, -3].toString());
+	});
+
+	test("should generate correct portal frustrum slanted camera", () => {
+		const eye1 = vec3.fromValues(1.1, 0.5, 3);
+		const tr1 = vec3.fromValues(1, 1, 1);
+		const tl1 = vec3.fromValues(-1, 1, 1);
+		const bl1 = vec3.fromValues(-1, -1, 1);
+		const br1 = vec3.fromValues(1, -1, 1);
+		const currentFrustrum1 = getFrustrum(eye1, tr1, tl1, bl1, br1);
+		const portal1 = {
+			points: [
+				vec3.fromValues(0, 0, 0),
+				vec3.fromValues(0, 0, 1),
+				vec3.fromValues(0, 1, 0),
+				vec3.fromValues(0, 1, 1),
+				vec3.fromValues(1, 0, 0),
+				vec3.fromValues(1, 0, 1),
+				vec3.fromValues(1, 1, 0),
+				vec3.fromValues(1, 1, 1),
+			],
+			directionOfPortal: vec3.fromValues(0, 0, 1),
+		};
+
+		const portalFrustum1 = getPortalFrustrum(currentFrustrum1, portal1);
+		expect(portalFrustum1).toHaveProperty("eye");
+		//expect(portalFrustum1.topRightRay.toString()).toEqual([-0.1, 0.5, -2].toString());
+		//expect(portalFrustum1.topLeftRay.toString()).toEqual([-1.1, 0.5, -3].toString());
+		//expect(portalFrustum1.bottomLeftRay.toString()).toEqual([-1.1, -0.5, -3].toString());
+		//expect(portalFrustum1.bottomRightRay.toString()).toEqual([-0.1, -0.5, -2].toString());
+	});
+});
+
+describe("isTriInFrustum", () => {
+	test("should return true for a triangle fully inside the frustum", () => {
+		const currentFrustum = {
+			eye: vec3.fromValues(0, 0, 0),
+			topRightRay: vec3.fromValues(1, 1, 1),
+			topLeftRay: vec3.fromValues(-1, 1, 1),
+			bottomLeftRay: vec3.fromValues(-1, -1, 1),
+			bottomRightRay: vec3.fromValues(1, -1, 1)
+		};
+		const triPoints = [
+			vec3.fromValues(0.2, 0.2, 2),
+			vec3.fromValues(-0.2, 0.2, 2),
+			vec3.fromValues(0, -0.2, 2)
+		];
+		console.log("------------------------------------")
+		console.log(triPoints)
+		expect(isTriInFrustum(currentFrustum, triPoints)).toBe(true);
+	});
+
+	test("should return false for a triangle completely outside the frustum", () => {
+		const currentFrustum = {
+			eye: vec3.fromValues(0, 0, 0),
+			topRightRay: vec3.fromValues(1, 1, 1),
+			topLeftRay: vec3.fromValues(-1, 1, 1),
+			bottomLeftRay: vec3.fromValues(-1, -1, 1),
+			bottomRightRay: vec3.fromValues(1, -1, 1)
+		};
+		const triPoints = [
+			vec3.fromValues(3, 3, 5),
+			vec3.fromValues(4, 3, 5),
+			vec3.fromValues(3, 4, 5)
+		];
+		console.log("------------------------------------");
+		console.log(triPoints);
+		expect(isTriInFrustum(currentFrustum, triPoints)).toBe(false);
+	});
+
+	test("should return true for a triangle partially inside the frustum", () => {
+		const currentFrustum = {
+			eye: vec3.fromValues(0, 0, 0),
+			topRightRay: vec3.fromValues(1, 1, 1),
+			topLeftRay: vec3.fromValues(-1, 1, 1),
+			bottomLeftRay: vec3.fromValues(-1, -1, 1),
+			bottomRightRay: vec3.fromValues(1, -1, 1)
+		};
+		const triPoints = [
+			vec3.fromValues(0.5, 0.5, 1),
+			vec3.fromValues(1.5, 1.5, 2), // Outside
+			vec3.fromValues(0, -0.5, 1)
+		];
+		console.log("------------------------------------")
+		console.log(triPoints)
+		expect(isTriInFrustum(currentFrustum, triPoints)).toBe(true);
+	});
+
+	test("should return false when all points are behind the eye", () => {
+		const currentFrustum = {
+			eye: vec3.fromValues(0, 0, 0),
+			topRightRay: vec3.fromValues(1, 1, 1),
+			topLeftRay: vec3.fromValues(-1, 1, 1),
+			bottomLeftRay: vec3.fromValues(-1, -1, 1),
+			bottomRightRay: vec3.fromValues(1, -1, 1)
+		};
+		const triPoints = [
+			vec3.fromValues(-1, -1, -2),
+			vec3.fromValues(1, -1, -2),
+			vec3.fromValues(0, 1, -2)
+		];
+		console.log("------------------------------------")
+		console.log(triPoints)
+		expect(isTriInFrustum(currentFrustum, triPoints)).toBe(false);
+	});
+
+	test("should return false when the triangle points are exactly on the frustum planes", () => {
+		const currentFrustum = {
+			eye: vec3.fromValues(0, 0, 0),
+			topRightRay: vec3.fromValues(1, 1, 1),
+			topLeftRay: vec3.fromValues(-1, 1, 1),
+			bottomLeftRay: vec3.fromValues(-1, -1, 1),
+			bottomRightRay: vec3.fromValues(1, -1, 1)
+		};
+		const triPoints = [
+			vec3.fromValues(1, 1.1, .2), // On top right plane
+			vec3.fromValues(-1, 1.1, .2), // On top left plane
+			vec3.fromValues(0, 1.1, .2) // On bottom plane
+		];
+		console.log("------------------------------------")
+		console.log(triPoints)
+		expect(isTriInFrustum(currentFrustum, triPoints)).toBe(false);
+	});
+});

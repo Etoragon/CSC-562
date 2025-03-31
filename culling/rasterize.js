@@ -15,6 +15,8 @@ var rotateTheta = Math.PI / 50; // how much to rotate models by with each key pr
 /* webgl and geometry data */
 var gl = null; // the all powerful gl object. It's all here folks!
 var inputTriangles = []; // the triangle data as loaded from input files
+var inputRoom = {};
+var portals = {}
 var numTriangleSets = 0; // how many triangle sets in input scene
 var inputEllipsoids = []; // the ellipsoid data as loaded from input files
 var numEllipsoids = 0; // how many ellipsoids in the input scene
@@ -31,6 +33,34 @@ var custom = false;
 var actualIteration = 0;
 var currIteration = 0;
 const intervalTick = 150;
+var currentFrustum = {
+	eye: Eye,
+	topRightRay: vec3.fromValues(1, 1, -1),
+	topLeftRay: vec3.fromValues(1, 1, 1),
+	bottomLeftRay: vec3.fromValues(1, -1, 1),
+	bottomRightRay: vec3.fromValues(1, -1, -1),
+}
+
+var cullingMode = "none";
+var currentRoom = 0;
+var notSeen = [];
+
+// This holds a map from room number to different portals
+// Format -> {roomNum: [{otherRoomNum: [portal1, portal2]}]}
+/**portalN -> {
+			points: [
+				vec3.fromValues(3, 0, 0),
+				vec3.fromValues(3, 0, 1),
+				vec3.fromValues(4, 0, 0),
+				vec3.fromValues(4, 0, 1),
+				vec3.fromValues(3, 1, 0),
+				vec3.fromValues(3, 1, 1),
+				vec3.fromValues(4, 1, 0),
+				vec3.fromValues(4, 1, 1),
+
+			], directionOfPortal: vec3.fromValues(-1, 0, 0)
+		} 
+*/
 
 /* shader parameter locations */
 var vPosAttribLoc; // where to put position for vertex shader
@@ -50,8 +80,38 @@ var textureULoc;
 var Eye = vec3.clone(defaultEye); // eye position in world space
 var Center = vec3.clone(defaultCenter); // view direction in world space
 var Up = vec3.clone(defaultUp); // view up vector in world space
+var viewRight = vec3.create();
 
 // ASSIGNMENT HELPER FUNCTIONS
+
+/**
+ * This function returns the room
+ */
+function getRooms() {
+	let tempRoom = {
+		"rooms": [["s", "s", "s", "s", "s", "s", "s", "s", "s", "s", "s", "s", "s"],
+		["s", 0, 0, 0, 0, 0, "s", 1, 1, 1, 1, 1, "s"],
+		["s", 0, 0, 0, 0, 0, "p", 1, 1, 1, 1, 1, "s"],
+		["s", 0, 0, 0, 0, 0, "s", 1, 1, 1, 1, 1, "s"],
+		["s", 0, 0, 0, 0, 0, "p", 1, 1, 1, 1, 1, "s"],
+		["s", 0, 0, 0, 0, 0, "s", 1, 1, 1, 1, 1, "s"],
+		["s", "s", "s", "s", "s", "s", "s", "s", "s", "s", "s", "s", "s"]],
+		"furniture": [[0, 0, 0, "sphere", 0], [1, 4, 4, "triangleset", 0]]
+	}
+
+	let customTempRoom = {
+		"rooms": [["s", "s", "s", "s", "s", "s", "s", "s", "s", "s", "s", "s", "s"],
+		["s", 0, 0, "p", 3, 3, "s", 1, 1, "s", 2, 2, "s"],
+		["s", 0, 0, "s", 3, 3, "p", 1, 1, "s", 2, 2, "s"],
+		["s", 0, 0, "s", 3, 3, "s", 1, 1, "p", 2, 2, "s"],
+		["s", 0, 0, "s", 3, 3, "p", 1, 1, "s", 2, 2, "s"],
+		["s", 0, 0, "p", 3, 3, "s", 1, 1, "s", 2, 2, "s"],
+		["s", "s", "s", "s", "s", "s", "s", "s", "s", "s", "s", "s", "s"]],
+		"furniture": [[0, 0, 0, "sphere", 0], [1, 4, 4, "triangleset", 0]]
+	}
+
+	return custom ? customTempRoom : tempRoom;
+}
 
 /**
  * Gets json resource from url
@@ -61,125 +121,42 @@ var Up = vec3.clone(defaultUp); // view up vector in world space
  * @author Ethan Patten eppatten
  */
 function getJSONFile(url, descr) {
-
-	// If we are in custom mode, access the resource custom made
-	if (custom) {
-		
-		return 		[
-					{
-						"material": { "ambient": [0.1, 0.1, 0.1], "diffuse": [0.6, 0.6, 0.6], "specular": [0.3, 0.3, 0.3], "n": 11, "alpha": 0.9, "texture": "https://raw.githubusercontent.com/Etoragon/public_resources/e4d428efacd2b42ad708437d521d5e24b01929f4/anthony.jpg" },
-						"vertices": [[0.0, 0.4, 0.45], [0.1, 0.6, 0.45], [0.2, 0.4, 0.45]],
-						"normals": [[0, 0, -1], [0, 0, -1], [0, 0, -1]],
-						"uvs": [[0, 0], [0.5, 1], [1, 0]],
-						"triangles": [[0, 1, 2]]
-					},
-					{
-						"material": { "ambient": [0.1, 0.1, 0.1], "diffuse": [0.6, 0.6, 0.6], "specular": [0.3, 0.3, 0.3], "n": 15, "alpha": 1.0, "texture": "https://raw.githubusercontent.com/Etoragon/public_resources/e4d428efacd2b42ad708437d521d5e24b01929f4/flea.jpg" },
-						"vertices": [[0.3, 0.4, 0.45], [0.4, 0.6, 0.45], [0.5, 0.4, 0.45]],
-						"normals": [[0, 0, -1], [0, 0, -1], [0, 0, -1]],
-						"uvs": [[0, 0], [0.5, 1], [1, 0]],
-						"triangles": [[0, 1, 2]]
-					},
-					{
-						"material": { "ambient": [0.1, 0.1, 0.1], "diffuse": [0.6, 0.6, 0.6], "specular": [0.3, 0.3, 0.3], "n": 15, "alpha": 1.0, "texture": "https://raw.githubusercontent.com/Etoragon/public_resources/e4d428efacd2b42ad708437d521d5e24b01929f4/shad.jpg" },
-						"vertices": [[0.6, 0.4, 0.45], [0.7, 0.6, 0.45], [0.8, 0.4, 0.45]],
-						"normals": [[0, 0, -1], [0, 0, -1], [0, 0, -1]],
-						"uvs": [[0, 0], [0.5, 1], [1, 0]],
-						"triangles": [[0, 1, 2]]
-					},
-					{
-						"material": { "ambient": [0.1, 0.1, 0.1], "diffuse": [0.6, 0.6, 0.6], "specular": [0.3, 0.3, 0.3], "n": 15, "alpha": 1.0, "texture": "https://raw.githubusercontent.com/Etoragon/public_resources/e4d428efacd2b42ad708437d521d5e24b01929f4/john.png" },
-						"vertices": [[0.9, 0.4, 0.45], [1.0, 0.6, 0.45], [1.1, 0.4, 0.45]],
-						"normals": [[0, 0, -1], [0, 0, -1], [0, 0, -1]],
-						"uvs": [[0, 0], [0.5, 1], [1, 0]],
-						"triangles": [[0, 1, 2]]
-					},
-					{
-						"material": { "ambient": [0.1, 0.1, 0.1], "diffuse": [0.6, 0.6, 0.6], "specular": [0.3, 0.3, 0.3], "n": 11, "alpha": 0.9, "texture": "https://raw.githubusercontent.com/Etoragon/public_resources/refs/heads/main/mic.png" },
-						"vertices": [[0.0, 0.1, 0.45], [0.1, 0.3, 0.45], [0.2, 0.1, 0.45]],
-						"normals": [[0, 0, -1], [0, 0, -1], [0, 0, -1]],
-						"uvs": [[0, 0], [0.5, 1], [1, 0]],
-						"triangles": [[0, 1, 2]]
-					},
-					{
-						"material": { "ambient": [0.1, 0.1, 0.1], "diffuse": [0.6, 0.6, 0.6], "specular": [0.3, 0.3, 0.3], "n": 15, "alpha": 1.0, "texture": "https://raw.githubusercontent.com/Etoragon/public_resources/refs/heads/main/c7c249ef-9861-4e03-b557-59a9c59d6355.jpg" },
-						"vertices": [[0.3, 0.1, 0.45], [0.4, 0.3, 0.45], [0.5, 0.1, 0.45]],
-						"normals": [[0, 0, -1], [0, 0, -1], [0, 0, -1]],
-						"uvs": [[0, 0], [0.5, 1], [1, 0]],
-						"triangles": [[0, 1, 2]]
-					},
-					{
-						"material": { "ambient": [0.1, 0.1, 0.1], "diffuse": [0.6, 0.6, 0.6], "specular": [0.3, 0.3, 0.3], "n": 15, "alpha": 1.0, "texture": "https://raw.githubusercontent.com/Etoragon/public_resources/refs/heads/main/drums.png" },
-						"vertices": [[0.6, 0.3, 0.45], [0.7, 0.1, 0.45], [0.8, 0.3, 0.45]],
-						"normals": [[0, 0, -1], [0, 0, -1], [0, 0, -1]],
-						"uvs": [[0, 1], [0.5, 0], [1, 1]],
-						"triangles": [[0, 1, 2]]
-					},
-					{
-						"material": { "ambient": [0.1, 0.1, 0.1], "diffuse": [0.0, 0.6, 0.0], "specular": [0.3, 0.3, 0.3], "n": 15, "alpha": 1.0, "texture": "https://raw.githubusercontent.com/Etoragon/public_resources/refs/heads/main/10766395.png" },
-						"vertices": [[0.9, 0.1, 0.45], [1.0, 0.3, 0.45], [1.1, 0.1, 0.45]],
-						"normals": [[0, 0, -1], [0, 0, -1], [0, 0, -1]],
-						"uvs": [[0, 0], [0.5, 1], [1, 0]],
-						"triangles": [[0, 1, 2]]
-					},
-					{
-						"material": { "ambient": [0.1, 0.1, 0.1], "diffuse": [0.6, 0.6, 0.6], "specular": [0.3, 0.3, 0.3], "n": 15, "alpha": 1.0, "texture": "" },
-						"vertices": [[0.4 + Math.sin(currIteration) * (0.5), 1.3 + Math.cos(currIteration + Math.PI) * (0.5), 0.45], [0.5, 1.3, 0.45], [0.6 + Math.sin(currIteration) * (0.5), 1.3 + Math.cos(currIteration + Math.PI) * (0.5), 0.45]],
-						"normals": [[0, 0, -1], [0, 0, -1], [0, 0, -1]],
-						"uvs": [[0, 0], [0.5, 1], [1, 0]],
-						"triangles": [[0, 1, 2]]
-					}
-				]
-		
-		// This code would work if Github allowed http requests on repositories in my specific organization
-		/*try {
-			if ((typeof (url) !== "string") || (typeof (descr) !== "string"))
-				throw "getJSONFile: parameter not a string";
-			else {
-				var httpReq = new XMLHttpRequest(); // a new http request
-				httpReq.open("GET", "https://etoragon.github.io/public_resources/trianglesCustom.json", false); // init the request
-				httpReq.send(null); // send the request
-				var startTime = Date.now();
-				while ((httpReq.status !== 200) && (httpReq.readyState !== XMLHttpRequest.DONE)) {
-					if ((Date.now() - startTime) > 3000)
-						break;
-				} // until its loaded or we time out after three seconds
-				if ((httpReq.status !== 200) || (httpReq.readyState !== XMLHttpRequest.DONE))
-					throw "Unable to open " + descr + " file!";
-				else
-					return JSON.parse(httpReq.response);
-			} // end if good params
-		} // end try    
-		
-		catch (e) {
-			console.log(e);
-			return (String.null);
-		}*/
-	} else {
-		try {
-			if ((typeof (url) !== "string") || (typeof (descr) !== "string"))
-				throw "getJSONFile: parameter not a string";
-			else {
-				var httpReq = new XMLHttpRequest(); // a new http request
-				httpReq.open("GET", url, false); // init the request
-				httpReq.send(null); // send the request
-				var startTime = Date.now();
-				while ((httpReq.status !== 200) && (httpReq.readyState !== XMLHttpRequest.DONE)) {
-					if ((Date.now() - startTime) > 3000)
-						break;
-				} // until its loaded or we time out after three seconds
-				if ((httpReq.status !== 200) || (httpReq.readyState !== XMLHttpRequest.DONE))
-					throw "Unable to open " + descr + " file!";
-				else
-					return JSON.parse(httpReq.response);
-			} // end if good params
-		} // end try    
-		
-		catch (e) {
-			console.log(e);
-			return (String.null);
-		}
+	let tempRoom = {
+		"rooms": [["s", "s", "s", "s", "s", "s", "s", "s", "s", "s", "s", "s", "s"],
+		["s", 0, 0, 0, 0, 0, "s", 1, 1, 1, 1, 1, "s"],
+		["s", 0, 0, 0, 0, 0, "p", 1, 1, 1, 1, 1, "s"],
+		["s", 0, 0, 0, 0, 0, "s", 1, 1, 1, 1, 1, "s"],
+		["s", 0, 0, 0, 0, 0, "p", 1, 1, 1, 1, 1, "s"],
+		["s", 0, 0, 0, 0, 0, "s", 1, 1, 1, 1, 1, "s"],
+		["s", "s", "s", "s", "s", "s", "s", "s", "s", "s", "s", "s", "s"]],
+		"furniture": [[0, 0, 0, "sphere", 0], [1, 4, 4, "triangleset", 0]]
 	}
+	console.log(roomToTriangles(tempRoom));
+	return roomToTriangles(tempRoom);
+	try {
+		if ((typeof (url) !== "string") || (typeof (descr) !== "string"))
+			throw "getJSONFile: parameter not a string";
+		else {
+			var httpReq = new XMLHttpRequest(); // a new http request
+			httpReq.open("GET", url, false); // init the request
+			httpReq.send(null); // send the request
+			var startTime = Date.now();
+			while ((httpReq.status !== 200) && (httpReq.readyState !== XMLHttpRequest.DONE)) {
+				if ((Date.now() - startTime) > 3000)
+					break;
+			} // until its loaded or we time out after three seconds
+			if ((httpReq.status !== 200) || (httpReq.readyState !== XMLHttpRequest.DONE))
+				throw "Unable to open " + descr + " file!";
+			else
+				return JSON.parse(httpReq.response);
+		} // end if good params
+	} // end try    
+
+	catch (e) {
+		console.log(e);
+		return (String.null);
+	}
+
 } // end get input json file
 
 /**
@@ -220,7 +197,7 @@ function handleKeyDown(event) {
 	} // end rotate model
 
 	// set up needed view params
-	var lookAt = vec3.create(), viewRight = vec3.create(), temp = vec3.create(); // lookat, right & temp vectors
+	var lookAt = vec3.create(), temp = vec3.create(); // lookat, right & temp vectors
 	lookAt = vec3.normalize(lookAt, vec3.subtract(temp, Center, Eye)); // get lookat vector
 	viewRight = vec3.normalize(viewRight, vec3.cross(temp, lookAt, Up)); // get view right vector
 
@@ -250,19 +227,19 @@ function handleKeyDown(event) {
 			highlightModel(modelEnum.ELLIPSOID, (handleKeyDown.whichOn > 0) ? handleKeyDown.whichOn - 1 : numEllipsoids - 1);
 			break;
 		case "KeyM": // Reset view to look at the entire structure from one side
-		    // Example: View from the right side of the structure
-		    Eye = vec3.set(Eye, 2.0, 0.0, 0.0); // Camera position to the right
-		    Center = vec3.set(Center, 0.0, 0.0, 0.0); // Looking at the center of the structure
-		    Up = vec3.set(Up, 0.0, 1.0, 0.0); // Keep the camera upright
+			// Example: View from the right side of the structure
+			Eye = vec3.set(Eye, 2.0, 0.0, 0.0); // Camera position to the right
+			Center = vec3.set(Center, 0.0, 0.0, 0.0); // Looking at the center of the structure
+			Up = vec3.set(Up, 0.0, 1.0, 0.0); // Keep the camera upright
 			window.requestAnimationFrame(renderModels); // Trigger a rerender
-		    break;
+			break;
 		// view change
-		case "KeyA": // translate view left, rotate left with shift
+		case "KeyD": // translate view left, rotate left with shift
 			Center = vec3.add(Center, Center, vec3.scale(temp, viewRight, viewDelta));
 			if (!event.getModifierState("Shift"))
 				Eye = vec3.add(Eye, Eye, vec3.scale(temp, viewRight, viewDelta));
 			break;
-		case "KeyD": // translate view right, rotate right with shift
+		case "KeyA": // translate view right, rotate right with shift
 			Center = vec3.add(Center, Center, vec3.scale(temp, viewRight, -viewDelta));
 			if (!event.getModifierState("Shift"))
 				Eye = vec3.add(Eye, Eye, vec3.scale(temp, viewRight, -viewDelta));
@@ -348,10 +325,19 @@ function handleKeyDown(event) {
 			blendingBool = !blendingBool;
 			break;
 		case "Digit1":
-			if (event.getModifierState("Shift"))
+			if (event.getModifierState("Shift")) {
 				custom = !custom;
-			console.log("temp");
-			window.requestAnimationFrame(main);
+				window.requestAnimationFrame(main);
+			} else {
+				cullingMode = "none";
+			} break;
+		case "Digit2":
+			cullingMode = "frustum";
+			break;
+		case "Digit3":
+			console.log("pop")
+			cullingMode = "portal";
+			break;
 		//window.requestAnimationFrame(setupShaders);
 		//window.requestAnimationFrame(renderModels);
 		case "Backspace": // reset model transforms to default
@@ -467,6 +453,8 @@ function initTextureBuffer(gl) {
 	return textureCoordBuffer;
 }
 
+
+
 // set up the webGL environment
 function setupWebGL() {
 
@@ -478,7 +466,8 @@ function setupWebGL() {
 	var canvas = document.getElementById("myWebGLCanvas"); // create a js canvas
 	gl = canvas.getContext("webgl", { premultipliedAlpha: false }); // get a webgl object from it
 	gl.enable(gl.BLEND);
-	gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+	//TODO we will not do blending for now, no transparency
+	//gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 	try {
 		if (gl == null) {
 			throw "unable to create gl context -- is your browser gl ready?";
@@ -587,8 +576,12 @@ function loadModels() {
 		} // end catch
 	} // end make ellipsoid
 
-	inputTriangles = getJSONFile(INPUT_TRIANGLES_URL, "triangles"); // read in the triangle data
+	inputRoom = getRooms(); // read in the triangle data
 	// Load texture
+
+	inputTriangles = roomToTriangles(inputRoom);
+
+	portals = roomToPortals(inputRoom)
 
 
 
@@ -608,11 +601,7 @@ function loadModels() {
 			numTriangleSets = inputTriangles.length; // remember how many tri sets
 			for (var whichSet = 0; whichSet < numTriangleSets; whichSet++) { // for each tri set
 				var texture = null;
-				if (!custom) {
-					texture = loadTexture("https://raw.githubusercontent.com/NCSUCGClass/prog4/refs/heads/main/" + inputTriangles[whichSet].material.texture);
-				} else {
-					texture = loadTexture(inputTriangles[whichSet].material.texture);
-				}
+				texture = loadTexture("https://raw.githubusercontent.com/NCSUCGClass/prog4/refs/heads/main/" + inputTriangles[whichSet].material.texture);
 				textures.push(texture.texture)
 				// Flip image pixels into the bottom-to-top order that WebGL expects.
 				gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -655,9 +644,9 @@ function loadModels() {
 				gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffers[whichSet]); // activate that buffer
 				gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(inputTriangles[whichSet].glUVs), gl.STATIC_DRAW); // data in
 
-				console.log(new Float32Array(inputTriangles[whichSet].glUVs));
-				console.log(uvBuffers);
-				console.log(normalBuffers);
+				//console.log(new Float32Array(inputTriangles[whichSet].glUVs));
+				//console.log(uvBuffers);
+				//console.log(normalBuffers);
 
 				// set up the triangle index array, adjusting indices across sets
 				inputTriangles[whichSet].glTriangles = []; // flat index list for webgl
@@ -676,7 +665,7 @@ function loadModels() {
 
 			var temp = vec3.create(); // an intermediate vec3
 
-			viewDelta = vec3.length(vec3.subtract(temp, maxCorner, minCorner)) / 100; // set global
+			viewDelta = vec3.length(vec3.subtract(temp, maxCorner, minCorner)) / 500; // set global
 
 			inputEllipsoids = getJSONFile(INPUT_ELLIPSOIDS_URL, "ellipsoids"); // read in the ellipsoids
 
@@ -788,6 +777,13 @@ function setupShaders() {
         // eye location
         uniform vec3 uEyePosition; // the eye's position in world
         
+		uniform bool uShouldRenderFrustumCulling;
+		
+		uniform vec3 topRightRay;
+		uniform vec3 topLeftRay;
+		uniform vec3 bottomLeftRay;
+		uniform vec3 bottomRightRay;
+		
         // light properties
         uniform vec3 uLightAmbient; // the light's ambient color
         uniform vec3 uLightDiffuse; // the light's diffuse color
@@ -801,6 +797,7 @@ function setupShaders() {
 		uniform float uAlpha; // the alpha reflectivity
         uniform float uShininess; // the specular exponent
 		uniform bool blendingMode; // which blending mode to select
+		uniform bool uShouldRender; // A uniform to control rendering condition
         
         // geometry properties
         varying vec3 vWorldPos; // world xyz of fragment
@@ -811,6 +808,10 @@ function setupShaders() {
 		varying vec2 uvTexValue; // the interpolated uv coordinates to be passed from point
             
         void main(void) {
+			
+			if (!uShouldRenderFrustumCulling) {
+				;
+		    }
 			
 			vec2 newTexValue = vec2(1.0 - uvTexValue.x, uvTexValue.y);
 			
@@ -884,11 +885,17 @@ function setupShaders() {
 				pvmMatrixULoc = gl.getUniformLocation(shaderProgram, "upvmMatrix"); // ptr to pvmmat
 
 				// locate fragment uniforms
+				var shouldRenderLoc = gl.getUniformLocation(shaderProgram, "uShouldRenderFrustumCulling");
 				var eyePositionULoc = gl.getUniformLocation(shaderProgram, "uEyePosition"); // ptr to eye position
 				var lightAmbientULoc = gl.getUniformLocation(shaderProgram, "uLightAmbient"); // ptr to light ambient
 				var lightDiffuseULoc = gl.getUniformLocation(shaderProgram, "uLightDiffuse"); // ptr to light diffuse
 				var lightSpecularULoc = gl.getUniformLocation(shaderProgram, "uLightSpecular"); // ptr to light specular
 				var lightPositionULoc = gl.getUniformLocation(shaderProgram, "uLightPosition"); // ptr to light position
+				var topRightRayULoc = gl.getUniformLocation(shaderProgram, "topRightRay");
+				var topLeftRayULoc = gl.getUniformLocation(shaderProgram, "topLeftRay");
+				var botomLeftRayULoc = gl.getUniformLocation(shaderProgram, "bottomLeftRay");
+				var bottomRightRayULoc = gl.getUniformLocation(shaderProgram, "bottomRightRay");
+
 				ambientULoc = gl.getUniformLocation(shaderProgram, "uAmbient"); // ptr to ambient
 				diffuseULoc = gl.getUniformLocation(shaderProgram, "uDiffuse"); // ptr to diffuse
 				specularULoc = gl.getUniformLocation(shaderProgram, "uSpecular"); // ptr to specular
@@ -903,7 +910,12 @@ function setupShaders() {
 				gl.uniform3fv(lightDiffuseULoc, lightDiffuse); // pass in the light's diffuse emission
 				gl.uniform3fv(lightSpecularULoc, lightSpecular); // pass in the light's specular emission
 				gl.uniform3fv(lightPositionULoc, lightPosition); // pass in the light's position
+				gl.uniform3fv(topRightRayULoc, currentFrustum.topRightRay);
+				gl.uniform3fv(topLeftRayULoc, currentFrustum.topLeftRay);
+				gl.uniform3fv(botomLeftRayULoc, currentFrustum.bottomLeftRay);
+				gl.uniform3fv(bottomRightRayULoc, currentFrustum.bottomRightRay);
 				gl.uniform1i(textureULoc, 0);
+				gl.uniform1i(shouldRenderLoc, false); // false means discard triangles
 			} // end if no shader program link errors
 		} // end if no compile errors
 	} // end try 
@@ -913,12 +925,22 @@ function setupShaders() {
 	} // end catch
 } // end setup shaders
 
+var frameTimes = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+var currFrameIdx = 0;
+var start = performance.now();
+var finish = performance.now();
+
 // render the loaded model
 function renderModels() {
 
 	// construct the model transform matrix, based on model state
 	function makeModelTransform(currModel) {
 		var zAxis = vec3.create(), sumRotation = mat4.create(), temp = mat4.create(), negCtr = vec3.create();
+
+		currModel.center = vec3.fromValues(0, 0, 0);
+		currModel.yAxis = vec3.fromValues(0, 1, 0);
+		currModel.xAxis = vec3.fromValues(1, 0, 0);
+		currModel.translation = vec3.fromValues(-3, 0, -4);
 
 		// move the model to the origin
 		mat4.fromTranslation(mMatrix, vec3.negate(negCtr, currModel.center));
@@ -942,7 +964,7 @@ function renderModels() {
 		// translate model to current interactive orientation
 		mat4.multiply(mMatrix, mat4.fromTranslation(temp, currModel.translation), mMatrix); // T(pos)*T(ctr)*R(ax)*S(1.2)*T(-ctr)
 
-	} // end make model transform
+	} // end make model transform	
 
 	// var hMatrix = mat4.create(); // handedness matrix
 	var pMatrix = mat4.create(); // projection matrix
@@ -964,69 +986,177 @@ function renderModels() {
 	mat4.multiply(pvMatrix, pvMatrix, vMatrix); // projection * view
 
 	// render each triangle set
+	var totalCount = 0;
+
 	var currSet; // the tri set and its material properties
-	for (var whichTriSet = 0; whichTriSet < numTriangleSets; whichTriSet++) {
-		currSet = inputTriangles[whichTriSet];
 
-		gl.bindTexture(gl.TEXTURE_2D, textures[whichTriSet]);
+	/*const expectedOutput0 = [{
+		points: ROOM_CELL_TO_3D_BLOCK(roomJson, 1, 2, 1, [0, 0, 0]).vertices,
+		directionOfPortal: vec3.fromValues(1, 0, 0),
+		connectingRoom: 1
+	}];
+	const expectedOutput1 = [{
+		points: ROOM_CELL_TO_3D_BLOCK(roomJson, 1, 2, 1, [0, 0, 0]).vertices,
+		directionOfPortal: vec3.fromValues(-1, 0, 0),
+		connectingRoom: 0
+	}]*/
 
-		// make model transform, add to view project
-		makeModelTransform(currSet);
-		mat4.multiply(pvmMatrix, pvMatrix, mMatrix); // project * view * model
-		gl.uniformMatrix4fv(mMatrixULoc, false, mMatrix); // pass in the m matrix
-		gl.uniformMatrix4fv(pvmMatrixULoc, false, pvmMatrix); // pass in the hpvm matrix
 
-		// reflectivity: feed to the fragment shader
-		gl.uniform3fv(ambientULoc, currSet.material.ambient); // pass in the ambient reflectivity
-		gl.uniform3fv(diffuseULoc, currSet.material.diffuse); // pass in the diffuse reflectivity
-		gl.uniform3fv(specularULoc, currSet.material.specular); // pass in the specular reflectivity
-		gl.uniform1f(alphaULoc, currSet.material.alpha); // pass in the alpha value
-		gl.uniform1i(blendingModeULoc, blendingBool);
-		gl.uniform1f(shininessULoc, currSet.material.n); // pass in the specular exponent
+	currentFrustum.to = 0;
+	var portalFrustums = [currentFrustum];
+	var queuedFrustums = [];
+	var currentCheckingPortalRoom = 0;
 
-		// vertex buffer: activate and feed into vertex shader
-		gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffers[whichTriSet]); // activate
-		gl.vertexAttribPointer(vPosAttribLoc, 3, gl.FLOAT, false, 0, 0); // feed
-		gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffers[whichTriSet]); // activate
-		gl.vertexAttribPointer(vNormAttribLoc, 3, gl.FLOAT, false, 0, 0); // feed
-		gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffers[whichTriSet]);
-		gl.vertexAttribPointer(vUVAttribLoc, 2, gl.FLOAT, false, 0, 0);
+	var checkedRooms = [];
 
-		// triangle buffer: activate and render
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, triangleBuffers[whichTriSet]); // activate
-		gl.drawElements(gl.TRIANGLES, 3 * triSetSizes[whichTriSet], gl.UNSIGNED_SHORT, 0); // render
+	while (portalFrustums.length != 0) {
 
-	} // end for each triangle set
+		let currentCheckingFrustum = portalFrustums[portalFrustums.length - 1];
 
-	// render each ellipsoid
-	var ellipsoid, instanceTransform = mat4.create(); // the current ellipsoid and material
+		currentCheckingPortalRoom = currentCheckingFrustum.to;
 
-	for (var whichEllipsoid = 0; whichEllipsoid < numEllipsoids; whichEllipsoid++) {
-		ellipsoid = inputEllipsoids[whichEllipsoid];
+		for (var whichTriSet = 0; whichTriSet < numTriangleSets; whichTriSet++) {
+			//console.log(inputTriangles[whichTriSet]);
+			//console.log(currentFrustum);
+			notSeen[whichTriSet] = true;
+			if (cullingMode == "frustum" || cullingMode == "portal") {
+				if (!isTriInFrustum(currentFrustum, inputTriangles[whichTriSet].vertices)) {
+					continue;
+				}
+				if (cullingMode == "portal") {
+					if (inputTriangles[whichTriSet].roomType == currentCheckingPortalRoom && inputTriangles[whichTriSet].roomType != "p") {
+						console.log(currentCheckingFrustum)
+						if (!isTriInFrustum(currentCheckingFrustum, inputTriangles[whichTriSet].vertices)) {
+							console.log("poop")
+							continue;
+						}
+					} else if (inputTriangles[whichTriSet].roomType != "p") {
+						if (!isTriInFrustum(currentCheckingFrustum, inputTriangles[whichTriSet].vertices)) {
+							console.log("poop")
+							continue;
+						}
+					}
+				}
+			}
 
-		// define model transform, premult with pvmMatrix, feed to vertex shader
-		makeModelTransform(ellipsoid);
-		pvmMatrix = mat4.multiply(pvmMatrix, pvMatrix, mMatrix); // premultiply with pv matrix
-		gl.uniformMatrix4fv(mMatrixULoc, false, mMatrix); // pass in model matrix
-		gl.uniformMatrix4fv(pvmMatrixULoc, false, pvmMatrix); // pass in project view model matrix
+			notSeen[whichTriSet] = false;
 
-		// reflectivity: feed to the fragment shader
-		gl.uniform3fv(ambientULoc, ellipsoid.ambient); // pass in the ambient reflectivity
-		gl.uniform3fv(diffuseULoc, ellipsoid.diffuse); // pass in the diffuse reflectivity
-		gl.uniform3fv(specularULoc, ellipsoid.specular); // pass in the specular reflectivity
-		gl.uniform1f(alphaULoc, currSet.material.alpha); // pass in the alpha value
-		gl.uniform1i(blendingModeULoc, blendingBool);
-		gl.uniform1f(shininessULoc, ellipsoid.n); // pass in the specular exponent
+			totalCount += inputTriangles[whichTriSet].triangles.length;
+			//console.log(inputTriangles);
+			currSet = inputTriangles[whichTriSet];
 
-		gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffers[numTriangleSets + whichEllipsoid]); // activate vertex buffer
-		gl.vertexAttribPointer(vPosAttribLoc, 3, gl.FLOAT, false, 0, 0); // feed vertex buffer to shader
-		gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffers[numTriangleSets + whichEllipsoid]); // activate normal buffer
-		gl.vertexAttribPointer(vNormAttribLoc, 3, gl.FLOAT, false, 0, 0); // feed normal buffer to shader
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, triangleBuffers[numTriangleSets + whichEllipsoid]); // activate tri buffer
+			gl.bindTexture(gl.TEXTURE_2D, textures[whichTriSet]);
 
-		// draw a transformed instance of the ellipsoid
-		gl.drawElements(gl.TRIANGLES, triSetSizes[numTriangleSets + whichEllipsoid], gl.UNSIGNED_SHORT, 0); // render
-	} // end for each ellipsoid
+			// make model transform, add to view project
+			makeModelTransform(currSet);
+			mat4.multiply(pvmMatrix, pvMatrix, mMatrix); // project * view * model
+			gl.uniformMatrix4fv(mMatrixULoc, false, mMatrix); // pass in the m matrix
+			gl.uniformMatrix4fv(pvmMatrixULoc, false, pvmMatrix); // pass in the hpvm matrix
+
+			// reflectivity: feed to the fragment shader
+			gl.uniform3fv(ambientULoc, currSet.material.ambient); // pass in the ambient reflectivity
+			gl.uniform3fv(diffuseULoc, currSet.material.diffuse); // pass in the diffuse reflectivity
+			gl.uniform3fv(specularULoc, currSet.material.specular); // pass in the specular reflectivity
+			gl.uniform1f(alphaULoc, currSet.material.alpha); // pass in the alpha value
+			gl.uniform1i(blendingModeULoc, blendingBool);
+			gl.uniform1f(shininessULoc, currSet.material.n); // pass in the specular exponent
+
+			// vertex buffer: activate and feed into vertex shader
+			gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffers[whichTriSet]); // activate
+			gl.vertexAttribPointer(vPosAttribLoc, 3, gl.FLOAT, false, 0, 0); // feed
+			gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffers[whichTriSet]); // activate
+			gl.vertexAttribPointer(vNormAttribLoc, 3, gl.FLOAT, false, 0, 0); // feed
+			gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffers[whichTriSet]);
+			gl.vertexAttribPointer(vUVAttribLoc, 2, gl.FLOAT, false, 0, 0);
+
+			// triangle buffer: activate and render
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, triangleBuffers[whichTriSet]); // activate
+
+
+			gl.drawElements(gl.TRIANGLES, 3 * triSetSizes[whichTriSet], gl.UNSIGNED_SHORT, 0); // render
+		} // end for each triangle set
+
+		// render each ellipsoid
+		var ellipsoid, instanceTransform = mat4.create(); // the current ellipsoid and material
+
+		for (var whichEllipsoid = 0; whichEllipsoid < numEllipsoids; whichEllipsoid++) {
+			ellipsoid = inputEllipsoids[whichEllipsoid];
+
+			// define model transform, premult with pvmMatrix, feed to vertex shader
+			makeModelTransform(ellipsoid);
+			pvmMatrix = mat4.multiply(pvmMatrix, pvMatrix, mMatrix); // premultiply with pv matrix
+			gl.uniformMatrix4fv(mMatrixULoc, false, mMatrix); // pass in model matrix
+			gl.uniformMatrix4fv(pvmMatrixULoc, false, pvmMatrix); // pass in project view model matrix
+
+			// reflectivity: feed to the fragment shader
+			gl.uniform3fv(ambientULoc, ellipsoid.ambient); // pass in the ambient reflectivity
+			gl.uniform3fv(diffuseULoc, ellipsoid.diffuse); // pass in the diffuse reflectivity
+			gl.uniform3fv(specularULoc, ellipsoid.specular); // pass in the specular reflectivity
+			gl.uniform1f(alphaULoc, currSet.material.alpha); // pass in the alpha value
+			gl.uniform1i(blendingModeULoc, blendingBool);
+			gl.uniform1f(shininessULoc, ellipsoid.n); // pass in the specular exponent
+
+			gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffers[numTriangleSets + whichEllipsoid]); // activate vertex buffer
+			gl.vertexAttribPointer(vPosAttribLoc, 3, gl.FLOAT, false, 0, 0); // feed vertex buffer to shader
+			gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffers[numTriangleSets + whichEllipsoid]); // activate normal buffer
+			gl.vertexAttribPointer(vNormAttribLoc, 3, gl.FLOAT, false, 0, 0); // feed normal buffer to shader
+			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, triangleBuffers[numTriangleSets + whichEllipsoid]); // activate tri buffer
+
+			// draw a transformed instance of the ellipsoid
+			gl.drawElements(gl.TRIANGLES, triSetSizes[numTriangleSets + whichEllipsoid], gl.UNSIGNED_SHORT, 0); // render
+		} // end for each ellipsoid
+
+		// Now that we have checked this frustum, remove it
+		portalFrustums.pop();
+
+		if (cullingMode == "portal") {
+
+			// Check to make sure that the room this portal looks into isn't already checked
+			if (checkedRooms.indexOf(currentCheckingPortalRoom) == -1) {
+				// Iterate through all the portals in that new room
+				//console.log(portals[0]);
+				for (let idx = 0; idx < portals[currentCheckingPortalRoom].length; idx++) {
+					let portal = portals[currentCheckingPortalRoom][idx];
+					//console.log(portal);
+					let newPortal = getPortalFrustrum(currentCheckingFrustum, portal);
+					// If the frustum is actually valid, push it
+					if (newPortal.topRightRay != null && newPortal.topLeftRay != null && newPortal.bottomLeftRay != null && newPortal.bottomRightRay != null) {
+						newPortal.to = portal.connectingRoom;
+						queuedFrustums.push(newPortal);
+					}
+				}
+				// Now that we have checked it, add it to the checked list
+				checkedRooms.push(currentCheckingPortalRoom);
+			}
+		}
+
+		if (portalFrustums.length == 0) {
+			portalFrustums = portalFrustums.concat(queuedFrustums);
+			queuedFrustums = [];
+		}
+	}
+
+	finish = performance.now();
+
+	frameTimes[currFrameIdx] = finish - start;
+	currFrameIdx = (currFrameIdx + 1) % 20;
+
+	let currentFPSTotal = 0;
+	frameTimes.map((time) => {
+		currentFPSTotal += (time / 1000.0)
+	})
+
+	//console.log(currentFPSTotal);
+	//console.log(numTriangleSets);
+	//console.log(skipCount);
+
+
+	document.getElementById("fpsCounter").innerText = Math.floor(1 / (currentFPSTotal / 20)).toString();
+	document.getElementById("numTrianglesRendered").innerText = (totalCount).toString();
+	document.getElementById("cullingMode").innerText = cullingMode;
+
+	start = performance.now();
+
 } // end render model
 
 function specialFeature() {
@@ -1052,7 +1182,161 @@ function specialFeature() {
 	window.requestAnimationFrame(loadModels);
 }
 
+let playerPos = { x: Eye[0] + 3, y: Eye[2] + 4 }; // Default player position
 /* MAIN -- HERE is where execution begins after window load */
+function setupTopDown() {
+	const canvas = document.getElementById("gameCanvas");
+	const ctx = canvas.getContext("2d");
+
+	console.log(inputRoom);
+	const TILE_SIZE = canvas.width / inputRoom.rooms[0].length; // Auto-scale tiles
+
+
+	// Handle keyboard input
+	window.addEventListener("keydown", (event) => {
+		setTimeout(() => {
+			console.log(Center);
+			playerPos.y = Eye[2] + 4;
+			playerPos.x = Eye[0] + 3;
+			drawGrid(); // Redraw after movement
+		}, 0);
+	});
+
+
+
+	// Draw function
+	function drawGrid() {
+		let viewRightTemp = vec3.clone(viewRight);
+
+		// set up needed view params
+		var lookAtTemp = vec3.create(), tempTemp = vec3.create(); // lookat, right & temp vectors
+		lookAtTemp = vec3.normalize(lookAtTemp, vec3.subtract(tempTemp, Center, Eye)); // get lookat vector
+		viewRightTemp = vec3.normalize(viewRightTemp, vec3.cross(tempTemp, lookAtTemp, Up));
+
+
+
+		let _ = vec3.fromValues(0, 0, 0);
+
+		currentFrustum = {
+			eye: vec3.add(_, Eye, vec3.fromValues(3, 0, 4)),
+			topRightRay: vec3.fromValues(viewRightTemp[0] + viewRightTemp[2], 1, -1.0 * viewRightTemp[0] + viewRightTemp[2]),
+			topLeftRay: vec3.fromValues(viewRightTemp[2] - viewRightTemp[0], 1, -1.0 * viewRightTemp[0] - viewRightTemp[2]),
+			bottomLeftRay: vec3.fromValues(viewRightTemp[2] - viewRightTemp[0], -1, -1.0 * viewRightTemp[0] - viewRightTemp[2]),
+			bottomRightRay: vec3.fromValues(viewRightTemp[0] + viewRightTemp[2], -1, -1.0 * viewRightTemp[0] + viewRightTemp[2]),
+		}
+
+		let portal1 = {
+			points: [
+				vec3.fromValues(6, 0, 2),
+				vec3.fromValues(6, 0, 3),
+				vec3.fromValues(7, 0, 2),
+				vec3.fromValues(7, 0, 3),
+				vec3.fromValues(6, 1, 2),
+				vec3.fromValues(6, 1, 3),
+				vec3.fromValues(7, 1, 2),
+				vec3.fromValues(7, 1, 3),
+
+			], directionOfPortal: vec3.fromValues(1, 0, 0)
+		}
+
+		let portal2 = {
+			points: [
+				vec3.fromValues(6, 0, 4),
+				vec3.fromValues(6, 0, 5),
+				vec3.fromValues(7, 0, 4),
+				vec3.fromValues(7, 0, 5),
+				vec3.fromValues(6, 1, 4),
+				vec3.fromValues(6, 1, 5),
+				vec3.fromValues(7, 1, 4),
+				vec3.fromValues(7, 1, 5),
+
+			], directionOfPortal: vec3.fromValues(1, 0, 0)
+		}
+
+
+		let newCalculatedFrustum1 = getPortalFrustrum(currentFrustum, portal1);
+		let newCalculatedFrustum2 = getPortalFrustrum(currentFrustum, portal2);
+
+		let idxTemp = 0;
+		for (let y = 0; y < inputRoom.rooms.length; y++) {
+			for (let x = 0; x < inputRoom.rooms[y].length; x++) {
+				let tile = inputRoom.rooms[y][x];
+				let dark = false;
+				if (tile != "s") {
+					dark = notSeen[idxTemp];
+					idxTemp += 1;
+				}
+				/*if (cullingMode == "frustum") {
+					console.log(ROOM_CELL_TO_3D_BLOCK(inputRoom, y, x, 1));
+					if (!isTriInFrustum(currentFrustum, ROOM_CELL_TO_3D_BLOCK(inputRoom, y, x, 1))) {
+						dark = true;
+					}
+					//if (cullingMode == "portal") {
+					//	if (tile != currentRoom && tile != "p") {
+					//		dark = false;
+					//	}
+					//}
+				}*/
+
+				// Determine tile color
+				if (tile === "s") {
+					ctx.fillStyle = dark ? "grey" : "blue";
+				} else if (tile === "p") {
+					ctx.fillStyle = dark ? "black" : "red";
+				} else {
+					ctx.fillStyle = dark ? "grey" : "lightblue";
+				} // Skip "p" (player)
+
+				ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+			}
+		}
+
+		// Draw player (green circle)
+		ctx.fillStyle = "green";
+		ctx.beginPath();
+		ctx.arc(
+			(playerPos.x) * TILE_SIZE, // Center of tile
+			(playerPos.y) * TILE_SIZE,
+			TILE_SIZE / 3, //Size of player
+			0, Math.PI * 2
+		);
+		ctx.fill();
+
+		console.log(viewRight);
+
+		drawLine(playerPos.x, playerPos.y, playerPos.x - (viewRightTemp[0] - viewRightTemp[2]) * 30, playerPos.y - (viewRightTemp[0] + viewRightTemp[2]) * 30, "red");
+		drawLine(playerPos.x, playerPos.y, playerPos.x + (viewRightTemp[0] + viewRightTemp[2]) * 30, playerPos.y - (viewRightTemp[0] - viewRightTemp[2]) * 30, "yellow");
+
+		if (newCalculatedFrustum1.topRightRay && newCalculatedFrustum1.topLeftRay && newCalculatedFrustum1.bottomLeftRay && newCalculatedFrustum1.bottomRightRay) {
+			drawLine(playerPos.x, playerPos.y, playerPos.x + (newCalculatedFrustum1.topRightRay[0]), playerPos.y + (newCalculatedFrustum1.topRightRay[2]), "purple");
+			drawLine(playerPos.x, playerPos.y, playerPos.x + (newCalculatedFrustum1.topLeftRay[0]), playerPos.y + (newCalculatedFrustum1.topLeftRay[2]), "green");
+		}
+		if (newCalculatedFrustum2.topRightRay && newCalculatedFrustum2.topLeftRay && newCalculatedFrustum2.bottomLeftRay && newCalculatedFrustum2.bottomRightRay) {
+			drawLine(playerPos.x, playerPos.y, playerPos.x + (newCalculatedFrustum2.topRightRay[0]), playerPos.y + (newCalculatedFrustum2.topRightRay[2]), "purple");
+			drawLine(playerPos.x, playerPos.y, playerPos.x + (newCalculatedFrustum2.topLeftRay[0]), playerPos.y + (newCalculatedFrustum2.topLeftRay[2]), "green");
+		}
+	}
+
+	function drawLine(x1, y1, x2, y2, color) {
+		ctx.strokeStyle = color;
+		ctx.beginPath();
+		ctx.moveTo(x1 * TILE_SIZE, y1 * TILE_SIZE);
+		ctx.lineTo(x2 * TILE_SIZE, y2 * TILE_SIZE);
+		ctx.stroke();
+	}
+
+	drawGrid(); // Initial draw
+}
+
+// **Check result asynchronously**
+function checkQuery() {
+	if (gl.getQueryParameter(query, gl.QUERY_RESULT_AVAILABLE)) {
+		const count = gl.getQueryParameter(query, gl.QUERY_RESULT);
+		document.getElementById("numTrianglesRendered").innerText = count.toString();
+	} else {
+		requestAnimationFrame(checkQuery);
+	}
+}
 
 function main() {
 	actualIteration = 0;
@@ -1062,8 +1346,10 @@ function main() {
 
 	setupWebGL(); // set up the webGL environment
 	loadModels(); // load in the models from tri file
+	setupTopDown();
 	setupShaders(); // setup the webGL shaders
 	renderModels(); // draw the triangles using webGL
+	checkQuery();
 
 	if (custom) {
 		intervalId = setInterval(specialFeature, intervalTick);
