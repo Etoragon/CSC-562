@@ -24,4 +24,13 @@ STEPS:
  - When building, some issues I got were a lot of converting from LPSTR to LPCWSTR. I got past this by just changing the functions to match the correct inputs
    - EX.) WNDCLASSW -> WNDCLASS
    - EX.) LoadCursorW -> LoadCursor
-   - If you have the reverse issue as me, you can simply reverse my changes. 
+   - If you have the reverse issue as me, you can simply reverse my changes.
+   - When I finally took care of all compiler issues, I was left with an exe file that opened an empty terminal. This can be shown by the changing the lines in CSkeletonBasics::Update() to this
+```python
+ if (NULL == m_pNuiSensor)
+    {
+        std::cout << "Program failed!" << std::endl;
+        return;
+    }
+```
+   - Which, for me, gets spammed. This tells me that the Kinect is not connected properly
