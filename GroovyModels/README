@@ -1,37 +1,17 @@
-# Foobar
+Welcome!
 
-Foobar is a Python library for dealing with word pluralization.
+This projet's goal is to connect live time Kinect data into blender, then wrap a skin on the skeleton. In addition,
+there will be goals for lighting, shading, and various properties. 
 
-## Installation
+I will also provide a tutorial for installation.
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
+PROJECT REQUIREMENTS:
+ - Xbox 360 Kinect
+ - Xbox 360 Kinect computer adaptor (AC - USB adaptor)
+ - Developer Toolkit Browser v1.8.0 (Kinect for Windows)
+ - Blender (I'm using version 4.4)
 
-```bash
-pip install foobar
-```
-
-## Usage
-
-```python
-import foobar
-
-# returns 'words'
-foobar.pluralize('word')
-
-# returns 'geese'
-foobar.pluralize('goose')
-
-# returns 'phenomenon'
-foobar.singularize('phenomena')
-```
-
-## Contributing
-
-Pull requests are welcome. For major changes, please open an issue first
-to discuss what you would like to change.
-
-Please make sure to update tests as appropriate.
-
-## License
-
-[MIT](https://choosealicense.com/licenses/mit/)
+NOTES BEFORE STARTING:
+ - There is a difference between an Xbox 360 Kinect and Xbox One Kinect. I am using an Xbox 360 kinect. 
+ - There are two main versions of the Kinect for Windows (v1.8.0 and v2.0.0). v1.8.0 is for Xbox 360 Kinect and v2.0.0 is for Xbox One Kinect
+ - There are more tutorials online for Xbox One, but this project only works with Xbox 360
