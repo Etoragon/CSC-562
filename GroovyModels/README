@@ -15,3 +15,9 @@ NOTES BEFORE STARTING:
  - There is a difference between an Xbox 360 Kinect and Xbox One Kinect. I am using an Xbox 360 kinect. 
  - There are two main versions of the Kinect for Windows (v1.8.0 and v2.0.0). v1.8.0 is for Xbox 360 Kinect and v2.0.0 is for Xbox One Kinect
  - There are more tutorials online for Xbox One, but this project only works with Xbox 360
+
+STEPS:
+ - Open Kinect for Windows v1.8 and install "Skeleton Basics-D2D"
+ - You can reference the installation guides for any issues (https://learn.microsoft.com/en-us/previous-versions/windows/kinect-1.8/jj131041(v=ieb.10))
+ - One issue I had was that NuiApi.h does not exist. If this comes up, go to build path and include where the file is located (for me, it was at "Program Files/Microsoft SDKs/Kinect/v1.8/inc/NuiSensor.h")
+ - 
