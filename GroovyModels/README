@@ -20,4 +20,8 @@ STEPS:
  - Open Kinect for Windows v1.8 and install "Skeleton Basics-D2D"
  - You can reference the installation guides for any issues (https://learn.microsoft.com/en-us/previous-versions/windows/kinect-1.8/jj131041(v=ieb.10))
  - One issue I had was that NuiApi.h does not exist. If this comes up, go to build path and include where the file is located (for me, it was at "Program Files/Microsoft SDKs/Kinect/v1.8/inc/NuiSensor.h")
- - 
+ - To run this project, you need to open the SkeletonBasics.cpp file, then go to Terminal > Run Build Task
+ - When building, some issues I got were a lot of converting from LPSTR to LPCWSTR. I got past this by just changing the functions to match the correct inputs
+   - EX.) WNDCLASSW -> WNDCLASS
+   - EX.) LoadCursorW -> LoadCursor
+   - If you have the reverse issue as me, you can simply reverse my changes. 
