@@ -50,3 +50,7 @@ for (int i = 0; i < NUI_SKELETON_COUNT; ++i)
     }
 ```
  - I will now be hosting the values using a localhost port. 
+
+ - UPDATE I will not be using localhost. I could spend time figuring it out, or I could just make it work
+ - I decided that I will just run the exe, which will print to console and I will have a python script which runs this exe and extracts the information from the console.
+
