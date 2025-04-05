@@ -34,3 +34,19 @@ STEPS:
     }
 ```
    - Which, for me, gets spammed. This tells me that the Kinect is not connected properly
+ - Okay, the previous issue was due to the c program not being able to open the window in Windows, and so it failed the entire program
+ - I've decided to just chop off hte visual portion and try to extract the data, which worked great! Issues all gone! Here's a snippet of my code rn
+```python
+for (int i = 0; i < NUI_SKELETON_COUNT; ++i)
+    {
+        std::cout << "Skeleton Number: " << i << std::endl;
+
+        // Example: Print specific fields of the skeleton data
+        std::cout << "Skeleton Tracking State: " << skeletonFrame.SkeletonData[i].eTrackingState << std::endl;
+        std::cout << "Skeleton Position: ("
+                  << skeletonFrame.SkeletonData[i].Position.x << ", "
+                  << skeletonFrame.SkeletonData[i].Position.y << ", "
+                  << skeletonFrame.SkeletonData[i].Position.z << ")" << std::endl;
+    }
+```
+ - I will now be hosting the values using a localhost port. 
