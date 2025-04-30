@@ -1,0 +1,56 @@
+Welcome!
+
+This projet's goal is to connect live time Kinect data into blender, then wrap a skin on the skeleton. In addition,
+there will be goals for lighting, shading, and various properties. 
+
+I will also provide a tutorial for installation.
+
+PROJECT REQUIREMENTS:
+ - Xbox 360 Kinect
+ - Xbox 360 Kinect computer adaptor (AC - USB adaptor)
+ - Developer Toolkit Browser v1.8.0 (Kinect for Windows)
+ - Blender (I'm using version 4.4)
+
+NOTES BEFORE STARTING:
+ - There is a difference between an Xbox 360 Kinect and Xbox One Kinect. I am using an Xbox 360 kinect. 
+ - There are two main versions of the Kinect for Windows (v1.8.0 and v2.0.0). v1.8.0 is for Xbox 360 Kinect and v2.0.0 is for Xbox One Kinect
+ - There are more tutorials online for Xbox One, but this project only works with Xbox 360
+
+STEPS:
+ - Open Kinect for Windows v1.8 and install "Skeleton Basics-D2D"
+ - You can reference the installation guides for any issues (https://learn.microsoft.com/en-us/previous-versions/windows/kinect-1.8/jj131041(v=ieb.10))
+ - One issue I had was that NuiApi.h does not exist. If this comes up, go to build path and include where the file is located (for me, it was at "Program Files/Microsoft SDKs/Kinect/v1.8/inc/NuiSensor.h")
+ - To run this project, you need to open the SkeletonBasics.cpp file, then go to Terminal > Run Build Task
+ - When building, some issues I got were a lot of converting from LPSTR to LPCWSTR. I got past this by just changing the functions to match the correct inputs
+   - EX.) WNDCLASSW -> WNDCLASS
+   - EX.) LoadCursorW -> LoadCursor
+   - If you have the reverse issue as me, you can simply reverse my changes.
+   - When I finally took care of all compiler issues, I was left with an exe file that opened an empty terminal. This can be shown by the changing the lines in CSkeletonBasics::Update() to this
+```python
+ if (NULL == m_pNuiSensor)
+    {
+        std::cout << "Program failed!" << std::endl;
+        return;
+    }
+```
+   - Which, for me, gets spammed. This tells me that the Kinect is not connected properly
+ - Okay, the previous issue was due to the c program not being able to open the window in Windows, and so it failed the entire program
+ - I've decided to just chop off hte visual portion and try to extract the data, which worked great! Issues all gone! Here's a snippet of my code rn
+```python
+for (int i = 0; i < NUI_SKELETON_COUNT; ++i)
+    {
+        std::cout << "Skeleton Number: " << i << std::endl;
+
+        // Example: Print specific fields of the skeleton data
+        std::cout << "Skeleton Tracking State: " << skeletonFrame.SkeletonData[i].eTrackingState << std::endl;
+        std::cout << "Skeleton Position: ("
+                  << skeletonFrame.SkeletonData[i].Position.x << ", "
+                  << skeletonFrame.SkeletonData[i].Position.y << ", "
+                  << skeletonFrame.SkeletonData[i].Position.z << ")" << std::endl;
+    }
+```
+ - I will now be hosting the values using a localhost port. 
+
+ - UPDATE I will not be using localhost. I could spend time figuring it out, or I could just make it work
+ - I decided that I will just run the exe, which will print to console and I will have a python script which runs this exe and extracts the information from the console.
+

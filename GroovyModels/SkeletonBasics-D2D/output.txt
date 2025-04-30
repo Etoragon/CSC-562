@@ -1,0 +1,31 @@
+Starting
+Window Setup Completed
+Window Shown
+0: 0
+1
+We have detected sensors. Amount: 1
+Sensor successfully created
+Sensor successfully connected and initialized
+CONNECTED
+Skeleton Processing Section6
+Result:0
+Render 1.2
+Render 2
+Skeleton Number: 0
+Skeleton Tracking State: 0
+Skeleton Position: (0, 0, 0)
+Skeleton Number: 1
+Skeleton Tracking State: 0
+Skeleton Position: (0, 0, 0)
+Skeleton Number: 2
+Skeleton Tracking State: 0
+Skeleton Position: (0, 0, 0)
+Skeleton Number: 3
+Skeleton Tracking State: 0
+Skeleton Position: (0, 0, 0)
+Skeleton Number: 4
+Skeleton Tracking State: 0
+Skeleton Position: (0, 0, 0)
+Skeleton Number: 5
+Skeleton Tracking State: 0
+Skeleton Position: (0, 0, 0)
