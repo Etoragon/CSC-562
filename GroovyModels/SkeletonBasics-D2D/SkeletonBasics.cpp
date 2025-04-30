@@ -9,6 +9,7 @@
 #include "SkeletonBasics.h"
 #include "resource.h"
 #include <iostream>
+#include <Windows.h>
 
 static const float g_JointThickness = 3.0f;
 static const float g_TrackedBoneThickness = 6.0f;
@@ -117,6 +118,7 @@ int CSkeletonBasics::Run(HINSTANCE hInstance, int nCmdShow)
     // Main message loop
     while (WM_QUIT != msg.message)
     {
+
         hEvents[0] = m_hNextSkeletonEvent;
 
         // Check to see if we have either a message (by passing in QS_ALLEVENTS)
