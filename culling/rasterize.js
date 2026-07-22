@@ -601,7 +601,7 @@ function loadModels() {
 			numTriangleSets = inputTriangles.length; // remember how many tri sets
 			for (var whichSet = 0; whichSet < numTriangleSets; whichSet++) { // for each tri set
 				var texture = null;
-				texture = loadTexture("https://raw.githubusercontent.com/NCSUCGClass/prog4/refs/heads/main/" + inputTriangles[whichSet].material.texture);
+				texture = loadTexture("https://github.com/eppatten/CSC-562/blob/master/culling/" + inputTriangles[whichSet].material.texture);
 				textures.push(texture.texture)
 				// Flip image pixels into the bottom-to-top order that WebGL expects.
 				gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
